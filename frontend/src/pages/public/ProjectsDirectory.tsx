@@ -41,10 +41,10 @@ export const ProjectsDirectory: React.FC = () => {
             <p className="text-slate-500 text-xs tracking-widest uppercase font-mono">Bro's Connect Showcase</p>
           </div>
           <h1 className="font-instrument italic text-[clamp(2rem,5vw,4rem)] leading-[1.05] text-slate-900">
-            Flagship <em>Architectures</em>
+            Featured <em>Projects</em>
           </h1>
           <p className="text-slate-600 text-sm mt-3 max-w-xl leading-relaxed">
-            Real software systems engineered by our verified architects. Every architecture features permanent creator attribution.
+            Real software systems engineered by our verified developers. Every project features permanent creator attribution.
           </p>
         </div>
         {user && (user.is_verified || ['super_admin', 'managing_director', 'admin'].includes(user.role)) && (
@@ -53,7 +53,7 @@ export const ProjectsDirectory: React.FC = () => {
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-black text-white text-sm font-semibold hover:bg-slate-800 shadow-sm transition-colors shrink-0"
           >
             <Plus size={14} />
-            <span>New Architecture</span>
+            <span>New Project</span>
           </Link>
         )}
       </div>
@@ -117,7 +117,7 @@ export const ProjectsDirectory: React.FC = () => {
           </div>
         ) : projects.length === 0 ? (
           <div className="text-center py-20 liquid-glass rounded-3xl border border-black/[0.08] shadow-sm">
-            <p className="font-instrument italic text-slate-900 text-2xl mb-2">No architectures found</p>
+            <p className="font-instrument italic text-slate-900 text-2xl mb-2">No projects found</p>
             <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">Try adjusting your search query or switching categories.</p>
             <button
               onClick={() => { setSelectedCategory('All'); setSearchQuery(''); fetchProjects(); }}

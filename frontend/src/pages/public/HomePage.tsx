@@ -471,7 +471,7 @@ export const HomePage: React.FC = () => {
             <div>
               <p className="text-slate-500 text-xs tracking-widest uppercase font-mono mb-2">Talent Network</p>
               <h2 className="font-instrument italic text-3xl sm:text-4xl text-slate-900">
-                Verified Architects
+                Verified Developers
               </h2>
             </div>
             <Link
@@ -495,10 +495,10 @@ export const HomePage: React.FC = () => {
               </div>
               <div>
                 <h3 className="font-instrument italic text-2xl sm:text-3xl text-slate-900 mb-2">
-                  Architect Network Primed
+                  Developer Network Primed
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed max-w-md mx-auto">
-                  Are you an experienced full-stack engineer, AI practitioner, or systems architect? Register to earn public attribution and receive direct inquiries.
+                  Are you an experienced full-stack engineer, AI practitioner, or systems engineer? Register to earn public attribution and receive direct inquiries.
                 </p>
               </div>
               <div className="pt-2">
@@ -534,14 +534,14 @@ export const HomePage: React.FC = () => {
                   <Sparkles size={11} className="text-slate-600" /> Direct Executive Inquiry
                 </span>
                 <h3 className="font-instrument italic text-3xl sm:text-4xl text-slate-900 mb-4 leading-tight">
-                  Have an architecture in mind? Let's engineer it.
+                  Have a project in mind? Let's engineer it.
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  Connect directly with Bro's Connect leadership and verified architects. Tell us your goals, select your target discipline, and receive a transparent project blueprint in Indian Rupees (₹).
+                  Connect directly with Bro's Connect leadership and verified developers. Tell us your goals, select your target discipline, and receive a transparent project blueprint in Indian Rupees (₹).
                 </p>
                 <div className="space-y-3">
                   {[
-                    'Direct communication with lead architects — zero middlemen',
+                    'Direct communication with lead developers — zero middlemen',
                     'Fixed-scope deliverables with milestones in Indian Rupees (₹)',
                     'Full source code ownership and verified creator attribution',
                   ].map((benefit) => (
