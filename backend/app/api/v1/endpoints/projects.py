@@ -1,0 +1,353 @@
+import re
+import uuid
+import logging
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select, or_
+from sqlalchemy.orm import selectinload
+from app.core.database import get_db
+from app.models import Project, ProjectDeveloper, DeveloperProfile, Technology, User
+from app.schemas import ProjectOut, ProjectCreate, ProjectUpdate
+from app.api.deps import get_current_user, get_current_verified_developer
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter()
+
+def slugify(text: str) -> str:
+    text = text.lower().strip()
+    text = re.sub(r'[^\w\s-]', '', text)
+    text = re.sub(r'[\s_-]+', '-', text)
+    return text.strip('-')
+
+@router.get("", response_model=List[ProjectOut])
+async def list_projects(
+    category: Optional[str] = Query(None, description="Filter by category"),
+    technology: Optional[str] = Query(None, description="Filter by technology"),
+    query: Optional[str] = Query(None, description="Search name or description"),
+    developer_username: Optional[str] = Query(None, description="Filter by developer username"),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(Project)
+        .where(Project.status == "Published")
+        .options(
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.user),
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.skills),
+            selectinload(Project.technologies)
+        )
+        .order_by(Project.created_at.desc())
+    )
+
+    if category and category != "All":
+        stmt = stmt.where(Project.category == category)
+
+    if query:
+        q_wildcard = f"%{query}%"
+        stmt = stmt.where(
+            or_(
+                Project.name.ilike(q_wildcard),
+                Project.short_description.ilike(q_wildcard),
+                Project.description.ilike(q_wildcard)
+            )
+        )
+
+    result = await db.execute(stmt)
+    projects = result.scalars().all()
+
+    if technology:
+        tech_lower = technology.strip().lower()
+        projects = [p for p in projects if any(t.name.lower() == tech_lower for t in p.technologies)]
+
+    if developer_username:
+        dev_u_lower = developer_username.strip().lower()
+        projects = [
+            p for p in projects
+            if any(
+                assoc.developer and assoc.developer.user and assoc.developer.user.username.lower() == dev_u_lower
+                for assoc in p.developer_associations
+            )
+        ]
+
+    return projects
+
+@router.get("/{slug}", response_model=ProjectOut)
+async def get_project_by_slug(slug: str, db: AsyncSession = Depends(get_db)):
+    clean_slug = slug.strip().lower()
+    stmt = (
+        select(Project)
+        .where(Project.slug == clean_slug)
+        .options(
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.user),
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.skills),
+            selectinload(Project.technologies)
+        )
+    )
+    project = (await db.execute(stmt)).scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    return project
+
+@router.post("", response_model=ProjectOut)
+async def create_project(
+    payload: ProjectCreate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Only verified developers, admin, managing_director, or super_admin can create projects
+    if current_user.role not in ["super_admin", "managing_director", "admin"] and not current_user.is_verified:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only verified developers or platform administrators can create projects."
+        )
+
+    try:
+        # Base slug
+        base_slug = slugify(payload.name) or f"project-{uuid.uuid4().hex[:6]}"
+        slug = base_slug
+        counter = 1
+        while True:
+            check_stmt = select(Project).where(Project.slug == slug)
+            exists = (await db.execute(check_stmt)).scalar_one_or_none()
+            if not exists:
+                break
+            slug = f"{base_slug}-{counter}"
+            counter += 1
+
+        # Resolve technologies (case-insensitive & deduplicated)
+        techs_to_assign = []
+        seen_tech_names = set()
+        if payload.technologies:
+            for tech_name in payload.technologies:
+                clean_t = tech_name.strip()
+                if not clean_t or clean_t.lower() in seen_tech_names:
+                    continue
+                seen_tech_names.add(clean_t.lower())
+                tech_stmt = select(Technology).where(Technology.name.ilike(clean_t))
+                tech = (await db.execute(tech_stmt)).scalars().first()
+                if not tech:
+                    tech = Technology(name=clean_t)
+                    db.add(tech)
+                    await db.flush()
+                if tech not in techs_to_assign:
+                    techs_to_assign.append(tech)
+
+        new_project = Project(
+            name=payload.name.strip(),
+            slug=slug,
+            short_description=payload.short_description,
+            description=payload.description,
+            category=payload.category,
+            demo_url=payload.demo_url,
+            repo_url=payload.repo_url,
+            image_url=payload.image_url or "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&q=80",
+            client_name=payload.client_name,
+            start_date=payload.start_date,
+            completion_date=payload.completion_date,
+            status="Published",
+            technologies=techs_to_assign
+        )
+        db.add(new_project)
+        await db.flush()
+
+        # Enforce Section 36: Project must have at least one verified developer
+        has_verified_dev = False
+        attributed_dev_ids = set()
+
+        # If team members provided
+        if payload.team_members and len(payload.team_members) > 0:
+            for member in payload.team_members:
+                dev_id = member.get("developer_id")
+                if not dev_id or dev_id in attributed_dev_ids:
+                    continue
+                attributed_dev_ids.add(dev_id)
+                dev_stmt = (
+                    select(DeveloperProfile)
+                    .join(DeveloperProfile.user)
+                    .where(DeveloperProfile.id == dev_id)
+                    .options(selectinload(DeveloperProfile.user))
+                )
+                dev_profile = (await db.execute(dev_stmt)).scalar_one_or_none()
+                if dev_profile:
+                    if dev_profile.user and (dev_profile.user.is_verified or dev_profile.user.role in ["super_admin", "managing_director", "admin"]):
+                        has_verified_dev = True
+                    assoc = ProjectDeveloper(
+                        project_id=new_project.id,
+                        developer_id=dev_profile.id,
+                        role_in_project=member.get("role_in_project", "Contributor"),
+                        is_lead=member.get("is_lead", False)
+                    )
+                    db.add(assoc)
+
+        # If current user is administrator/developer and not yet attributed, or no verified developer attributed yet
+        if not has_verified_dev or not attributed_dev_ids:
+            dev_stmt = (
+                select(DeveloperProfile)
+                .join(DeveloperProfile.user)
+                .where(DeveloperProfile.user_id == current_user.id)
+                .options(selectinload(DeveloperProfile.user))
+            )
+            current_dev = (await db.execute(dev_stmt)).scalar_one_or_none()
+            if not current_dev and current_user.role in ["super_admin", "managing_director", "admin"]:
+                # Ensure admin has developer profile
+                current_dev = DeveloperProfile(
+                    user_id=current_user.id,
+                    title="Platform Administrator",
+                    short_bio="Platform Administrator & Lead Developer at Bro's Connect.",
+                    bio="Full-stack engineering and platform systems at Bro's Connect.",
+                    location="India",
+                    availability="Available for Projects",
+                    years_experience=3,
+                    is_public=True
+                )
+                db.add(current_dev)
+                await db.flush()
+
+            if current_dev and current_dev.id not in attributed_dev_ids:
+                if current_user.is_verified or current_user.role in ["super_admin", "managing_director", "admin"]:
+                    has_verified_dev = True
+                assoc = ProjectDeveloper(
+                    project_id=new_project.id,
+                    developer_id=current_dev.id,
+                    role_in_project="Lead Developer",
+                    is_lead=True
+                )
+                db.add(assoc)
+                attributed_dev_ids.add(current_dev.id)
+
+        if not has_verified_dev:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Business Rule: Every project must have at least one verified developer associated with it before publication."
+            )
+
+        await db.commit()
+
+        # Re-query with full options
+        full_stmt = (
+            select(Project)
+            .where(Project.id == new_project.id)
+            .options(
+                selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.user),
+                selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.skills),
+                selectinload(Project.technologies)
+            )
+        )
+        return (await db.execute(full_stmt)).scalar_one()
+
+    except HTTPException:
+        await db.rollback()
+        raise
+    except Exception as e:
+        logger.exception("Error in create_project: %s", e)
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create project: {str(e)}"
+        )
+
+@router.put("/{project_id}", response_model=ProjectOut)
+async def update_project(
+    project_id: int,
+    payload: ProjectUpdate,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(Project)
+        .where(Project.id == project_id)
+        .options(
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer),
+            selectinload(Project.technologies)
+        )
+    )
+    project = (await db.execute(stmt)).scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    # Check permission: admin or associated developer
+    is_admin = current_user.role in ["super_admin", "managing_director", "admin"]
+    is_contributor = any(
+        assoc.developer and assoc.developer.user_id == current_user.id
+        for assoc in project.developer_associations
+    )
+    if not (is_admin or is_contributor):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this project")
+
+    if payload.name is not None:
+        project.name = payload.name
+    if payload.short_description is not None:
+        project.short_description = payload.short_description
+    if payload.description is not None:
+        project.description = payload.description
+    if payload.category is not None:
+        project.category = payload.category
+    if payload.demo_url is not None:
+        project.demo_url = payload.demo_url
+    if payload.repo_url is not None:
+        project.repo_url = payload.repo_url
+    if payload.image_url is not None:
+        project.image_url = payload.image_url
+    if payload.status is not None:
+        project.status = payload.status
+    if payload.client_name is not None:
+        project.client_name = payload.client_name
+
+    if payload.technologies is not None:
+        project.technologies.clear()
+        for tech_name in payload.technologies:
+            clean_t = tech_name.strip()
+            if not clean_t:
+                continue
+            tech_stmt = select(Technology).where(Technology.name == clean_t)
+            tech = (await db.execute(tech_stmt)).scalar_one_or_none()
+            if not tech:
+                tech = Technology(name=clean_t)
+                db.add(tech)
+                await db.flush()
+            project.technologies.append(tech)
+
+    await db.commit()
+
+    # Re-query with full options
+    full_stmt = (
+        select(Project)
+        .where(Project.id == project.id)
+        .options(
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.user),
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer).selectinload(DeveloperProfile.skills),
+            selectinload(Project.technologies)
+        )
+    )
+    return (await db.execute(full_stmt)).scalar_one()
+
+@router.delete("/{project_id}")
+async def delete_project(
+    project_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(Project)
+        .where(Project.id == project_id)
+        .options(
+            selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer)
+        )
+    )
+    project = (await db.execute(stmt)).scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    is_admin = current_user.role in ["super_admin", "managing_director", "admin"]
+    is_contributor = any(
+        assoc.developer and assoc.developer.user_id == current_user.id
+        for assoc in project.developer_associations
+    )
+    if not (is_admin or is_contributor):
+        raise HTTPException(status_code=403, detail="Not authorized to delete this project")
+
+    await db.delete(project)
+    await db.commit()
+    return {"message": "Project deleted successfully", "id": project_id}
+

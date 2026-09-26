@@ -1,0 +1,478 @@
+import React, { useState } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { User, Building, ArrowRight, AlertCircle, CheckCircle2, X } from 'lucide-react';
+import api from '../../api/client';
+import { useAuth } from '../../context/AuthContext';
+
+export const RegisterPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
+  const initialType = searchParams.get('type') === 'client' ? 'client' : 'developer';
+  const [accountType, setAccountType] = useState<'developer' | 'client'>(initialType);
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  // Shared fields
+  const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
+  const [password, setPassword] = useState('');
+
+  // Developer specific fields
+  const [title, setTitle] = useState('');
+  const [shortBio, setShortBio] = useState('');
+  const [location, setLocation] = useState('');
+  const [yearsExperience, setYearsExperience] = useState(2);
+  const [githubUrl, setGithubUrl] = useState('');
+  const [linkedinUrl, setLinkedinUrl] = useState('');
+  const [portfolioUrl, setPortfolioUrl] = useState('');
+  const [availability, setAvailability] = useState('Available for Projects');
+  const [skills, setSkills] = useState<string[]>(['React', 'TypeScript', 'Python']);
+  const [newSkill, setNewSkill] = useState('');
+
+  // Client specific fields
+  const [companyName, setCompanyName] = useState('');
+  const [website, setWebsite] = useState('');
+  const [industry, setIndustry] = useState('');
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const addSkill = () => {
+    if (newSkill.trim() && !skills.includes(newSkill.trim())) {
+      setSkills([...skills, newSkill.trim()]);
+      setNewSkill('');
+    }
+  };
+
+  const removeSkill = (sToRemove: string) => {
+    setSkills(skills.filter((s) => s !== sToRemove));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      if (accountType === 'developer') {
+        const payload = {
+          full_name: fullName,
+          username: username.trim().toLowerCase(),
+          email: email.trim().toLowerCase(),
+          phone: phone || null,
+          password: password,
+          title: title || 'Full-Stack Developer',
+          short_bio: shortBio,
+          location: location,
+          skills: skills,
+          years_experience: Number(yearsExperience),
+          github_url: githubUrl || null,
+          linkedin_url: linkedinUrl || null,
+          portfolio_url: portfolioUrl || null,
+          availability: availability,
+        };
+
+        const res = await api.post('/auth/register/developer', payload);
+        login(res.data.access_token, res.data.user);
+        navigate('/dashboard');
+      } else {
+        const payload = {
+          full_name: fullName,
+          username: username.trim().toLowerCase(),
+          email: email.trim().toLowerCase(),
+          phone: phone || null,
+          password: password,
+          company_name: companyName,
+          website: website || null,
+          industry: industry || null,
+        };
+
+        const res = await api.post('/auth/register/client', payload);
+        login(res.data.access_token, res.data.user);
+        navigate('/dashboard');
+      }
+    } catch (err: any) {
+      console.error('Registration failed', err);
+      setError(err.response?.data?.detail || 'Registration failed. Please check your inputs.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const inputClass =
+    'w-full bg-white border border-black/10 rounded-xl text-slate-900 text-sm placeholder-slate-400 focus:border-black/30 focus:outline-none px-4 py-3 transition-colors shadow-2xs';
+
+  const labelClass = 'block text-slate-600 text-xs tracking-wider uppercase mb-1.5 font-mono';
+
+  return (
+    <div className="min-h-screen bg-white text-slate-900 flex items-start justify-center px-6 py-16">
+      <div className="w-full max-w-2xl space-y-8">
+
+        {/* Brand */}
+        <div className="text-center space-y-2 flex flex-col items-center">
+          <Link to="/" className="inline-flex items-center gap-3 mb-1">
+            <img src="/logo.png" alt="Bro's Connect" className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+            <span className="font-instrument italic text-3xl text-slate-950">Bro's Connect</span>
+          </Link>
+          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-2">BUILD • CONNECT • GROW</p>
+          <h2 className="font-instrument italic text-2xl sm:text-3xl text-slate-950 leading-tight">
+            Create Your Account
+          </h2>
+          <p className="text-slate-500 text-xs">
+            Register to access developer architectures, client inquiries, or executive administration.
+          </p>
+        </div>
+
+        {/* Account Type Tabs */}
+        <div className="grid grid-cols-2 gap-2 p-1.5 liquid-glass rounded-2xl border border-black/[0.08] bg-slate-100/60 shadow-2xs">
+          <button
+            type="button"
+            onClick={() => setAccountType('developer')}
+            className={`py-3 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+              accountType === 'developer'
+                ? 'bg-white text-slate-950 font-semibold shadow-xs'
+                : 'text-slate-600 hover:text-slate-950 hover:bg-white/50'
+            }`}
+          >
+            <User size={14} />
+            <span>Developer</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setAccountType('client')}
+            className={`py-3 rounded-xl text-xs sm:text-sm font-medium transition-all flex items-center justify-center gap-1.5 ${
+              accountType === 'client'
+                ? 'bg-white text-slate-950 font-semibold shadow-xs'
+                : 'text-slate-600 hover:text-slate-950 hover:bg-white/50'
+            }`}
+          >
+            <Building size={14} />
+            <span>Client</span>
+          </button>
+        </div>
+
+        {/* Main Form Card */}
+        <div className="liquid-glass rounded-3xl p-8 border border-black/[0.08] shadow-sm bg-white/70">
+
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center gap-3">
+              <AlertCircle size={16} className="shrink-0 text-rose-500" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          {/* Developer Notice */}
+          {accountType === 'developer' && (
+            <div className="mb-6 p-4 liquid-glass rounded-2xl border border-black/[0.06] bg-slate-50/70 flex items-start gap-3">
+              <CheckCircle2 size={16} className="text-emerald-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-slate-800 text-xs font-medium mb-0.5">Developer Verification Process</p>
+                <p className="text-slate-500 text-xs leading-relaxed">
+                  Upon registration, your developer profile is created. Platform administrators review and verify your profile so you can publish architectures and connect with enterprise clients.
+                </p>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+
+            {/* ── Shared Credentials ── */}
+            <div className="space-y-4">
+              <h3 className="font-instrument italic text-slate-900 text-lg border-b border-black/[0.06] pb-2">
+                1. Account Credentials
+              </h3>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Full Name *</label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="e.g. Ritesh Lingamallu"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Username *</label>
+                  <input
+                    type="text"
+                    required
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    placeholder="e.g. ritesh-lingamallu"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>Email Address *</label>
+                  <input
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="ritesh@company.com"
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Phone Number</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Password *</label>
+                <input
+                  type="password"
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Minimum 6 characters"
+                  className={inputClass}
+                />
+              </div>
+            </div>
+
+
+
+            {/* ── Developer Specific Fields ── */}
+            {accountType === 'developer' && (
+              <div className="space-y-4 pt-2">
+                <h3 className="font-instrument italic text-slate-900 text-lg border-b border-black/[0.06] pb-2">
+                  2. Professional Details
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Professional Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g. Principal Systems Architect"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Years Experience</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={50}
+                      value={yearsExperience}
+                      onChange={(e) => setYearsExperience(Number(e.target.value))}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Location</label>
+                    <input
+                      type="text"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      placeholder="e.g. Hyderabad, India"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Availability</label>
+                    <select
+                      value={availability}
+                      onChange={(e) => setAvailability(e.target.value)}
+                      className={inputClass}
+                    >
+                      <option value="Available for Projects">Available for Projects</option>
+                      <option value="Available for Consulting & Advisory">Available for Consulting &amp; Advisory</option>
+                      <option value="Available for Enterprise Projects">Available for Enterprise Projects</option>
+                      <option value="Full-time">Full-time</option>
+                      <option value="Busy">Busy</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Skills */}
+                <div>
+                  <label className={labelClass}>Technologies &amp; Core Skills</label>
+                  <div className="flex flex-wrap gap-2 mb-3">
+                    {skills.map((skill) => (
+                      <span
+                        key={skill}
+                        className="liquid-glass text-xs text-slate-700 px-3 py-1 rounded-full flex items-center gap-1.5 border border-black/10 bg-slate-50 font-mono"
+                      >
+                        {skill}
+                        <button
+                          type="button"
+                          onClick={() => removeSkill(skill)}
+                          className="text-slate-400 hover:text-black"
+                        >
+                          <X size={12} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newSkill}
+                      onChange={(e) => setNewSkill(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addSkill();
+                        }
+                      }}
+                      placeholder="Type a skill (e.g. FastAPI, Docker) and press Add"
+                      className={inputClass}
+                    />
+                    <button
+                      type="button"
+                      onClick={addSkill}
+                      className="px-5 py-3 rounded-xl bg-black text-white text-xs font-semibold hover:bg-slate-800 shrink-0 shadow-sm"
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+
+                {/* Social links */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className={labelClass}>GitHub URL</label>
+                    <input
+                      type="url"
+                      value={githubUrl}
+                      onChange={(e) => setGithubUrl(e.target.value)}
+                      placeholder="https://github.com/..."
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>LinkedIn URL</label>
+                    <input
+                      type="url"
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      placeholder="https://linkedin.com/in/..."
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Website / Work Details URL</label>
+                    <input
+                      type="url"
+                      value={portfolioUrl}
+                      onChange={(e) => setPortfolioUrl(e.target.value)}
+                      placeholder="https://yourwebsite.com or work link..."
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                {/* Short Bio */}
+                <div>
+                  <label className={labelClass}>Short Bio</label>
+                  <textarea
+                    rows={2}
+                    value={shortBio}
+                    onChange={(e) => setShortBio(e.target.value)}
+                    placeholder="Brief 1–2 sentence overview of your engineering domain…"
+                    className={`${inputClass} resize-none`}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* ── Client Specific Fields ── */}
+            {accountType === 'client' && (
+              <div className="space-y-4 pt-2">
+                <h3 className="font-instrument italic text-slate-900 text-lg border-b border-black/[0.06] pb-2">
+                  2. Organization Information
+                </h3>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className={labelClass}>Company Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={companyName}
+                      onChange={(e) => setCompanyName(e.target.value)}
+                      placeholder="e.g. Apex Dynamics Ltd"
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>Industry</label>
+                    <input
+                      type="text"
+                      value={industry}
+                      onChange={(e) => setIndustry(e.target.value)}
+                      placeholder="e.g. FinTech, CleanTech, SaaS"
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className={labelClass}>Company Website</label>
+                  <input
+                    type="url"
+                    value={website}
+                    onChange={(e) => setWebsite(e.target.value)}
+                    placeholder="https://company.com"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Submit */}
+            <div className="pt-4 border-t border-black/[0.06]">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="w-full py-3.5 rounded-full bg-black text-white font-semibold text-sm hover:bg-slate-800 disabled:opacity-50 transition-all flex items-center justify-center gap-2 shadow-sm"
+              >
+                <span>{isLoading ? 'Creating Account…' : `Register as ${accountType === 'developer' ? 'Developer' : 'Client'}`}</span>
+                <ArrowRight size={15} />
+              </button>
+            </div>
+          </form>
+
+          {/* Login prompt */}
+          <div className="mt-6 text-center text-xs text-slate-500">
+            Already have an account?{' '}
+            <Link to="/login" className="text-slate-950 hover:underline underline-offset-2 font-semibold transition-colors">
+              Sign in to your workspace
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
