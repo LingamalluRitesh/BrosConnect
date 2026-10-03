@@ -116,12 +116,23 @@ export const HomePage: React.FC = () => {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.9, delay: 0.2 }}
-            className="font-instrument text-[clamp(2.6rem,7vw,5.8rem)] leading-[1.06] text-slate-950 tracking-tight mb-6 max-w-4xl"
+            className="font-instrument text-[clamp(2.8rem,7vw,5.5rem)] leading-[1.08] text-slate-950 tracking-tight mb-4 max-w-4xl"
           >
             Engineering <em>Digital Legacies.</em>
-            <br />
-            <span className="italic font-normal">{tagline}</span>
           </motion.h1>
+
+          {/* Small, refined tagline badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.25 }}
+            className="mb-6"
+          >
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-100/90 border border-black/[0.08] text-slate-600 text-xs sm:text-sm font-mono uppercase tracking-[0.2em] font-medium shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
+              <span>{tagline}</span>
+            </span>
+          </motion.div>
 
           {/* Subtitle with clean max-width */}
           <motion.p
