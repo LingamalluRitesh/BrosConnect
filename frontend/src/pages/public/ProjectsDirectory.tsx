@@ -17,7 +17,7 @@ export const ProjectsDirectory: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 
-  const categories = ['All', 'AI/ML', 'SaaS', 'Websites', 'Mobile Apps', 'Software', 'CRM', 'E-commerce', 'Automation'];
+  const categories = ['All', 'AI/ML', 'SaaS', 'Websites', 'Mobile Apps', 'Software', 'CRM', 'Web Platforms', 'Automation'];
 
   useEffect(() => { fetchProjects(); }, [selectedCategory]);
 

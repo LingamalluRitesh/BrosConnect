@@ -51,7 +51,7 @@ export const HomePage: React.FC = () => {
   const [inquiryName, setInquiryName] = useState('');
   const [inquiryEmail, setInquiryEmail] = useState('');
   const [inquiryPillar, setInquiryPillar] = useState('Websites');
-  const [inquiryBudget, setInquiryBudget] = useState('₹50,000 - ₹1,50,000');
+  const [inquiryBudget, setInquiryBudget] = useState('Production Application');
   const [inquiryMessage, setInquiryMessage] = useState('');
   const [inquirySubmitted, setInquirySubmitted] = useState(false);
 
@@ -190,7 +190,7 @@ export const HomePage: React.FC = () => {
                     <span>Verified Attribution</span>
                   </span>
                   <span className="text-slate-300">|</span>
-                  <span className="text-slate-800 font-medium">Pricing in INR (₹)</span>
+                  <span className="text-slate-800 font-medium">Production Engineering</span>
                 </div>
               </div>
             </div>
@@ -221,8 +221,7 @@ export const HomePage: React.FC = () => {
                 icon: Globe,
                 title: 'Websites',
                 subtitle: 'High-Performance Web Portals',
-                desc: 'Responsive web apps, client portals, and e-commerce platforms with React, TypeScript & FastAPI.',
-                price: '₹25,000',
+                desc: 'Responsive web apps, client portals, and digital platforms engineered with React, TypeScript & FastAPI.',
                 specs: ['React / Vite', 'FastAPI Backends', 'Mobile-Responsive', 'SEO Optimized'],
               },
               {
@@ -230,7 +229,6 @@ export const HomePage: React.FC = () => {
                 title: 'Apps',
                 subtitle: 'Cross-Platform Mobile',
                 desc: 'Native-feel iOS & Android applications engineered with Flutter and React Native.',
-                price: '₹45,000',
                 specs: ['Flutter / Dart', 'React Native', 'Offline-First Cache', 'Biometric Auth'],
               },
               {
@@ -238,7 +236,6 @@ export const HomePage: React.FC = () => {
                 title: 'Software',
                 subtitle: 'Enterprise Microservices',
                 desc: 'Distributed backends, high-throughput APIs, cloud automation, and high-concurrency database schemas.',
-                price: '₹85,000',
                 specs: ['Distributed APIs', 'PostgreSQL / Redis', 'Docker & K8s', 'Event-Driven'],
               },
               {
@@ -246,10 +243,9 @@ export const HomePage: React.FC = () => {
                 title: 'Digital Solutions',
                 subtitle: 'AI & Business Intelligence',
                 desc: 'Autonomous AI agents, predictive business analytics, and automated cloud workflows.',
-                price: '₹60,000',
                 specs: ['LLM Orchestration', 'Data Pipelines', 'Workflow Bots', 'Telemetry Dashboards'],
               },
-            ].map(({ icon: Icon, title, subtitle, desc, price, specs }) => (
+            ].map(({ icon: Icon, title, subtitle, desc, specs }) => (
               <div
                 key={title}
                 className="liquid-glass rounded-3xl p-6 sm:p-7 flex flex-col justify-between group hover:bg-slate-50/50 transition-all border border-black/[0.08] hover:border-black/20 shadow-sm hover:shadow-md"
@@ -274,14 +270,14 @@ export const HomePage: React.FC = () => {
 
                 <div className="pt-4 border-t border-black/[0.08] flex items-center justify-between">
                   <div>
-                    <span className="text-[10px] text-slate-400 font-mono uppercase block">Starting from</span>
-                    <span className="text-slate-900 font-bold text-sm">{price}</span>
+                    <span className="text-[10px] text-slate-400 font-mono uppercase block">Delivery Tier</span>
+                    <span className="text-slate-900 font-semibold text-xs">Production Grade</span>
                   </div>
                   <Link
-                    to="/register"
+                    to="/contact"
                     className="px-4 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-800 hover:text-black hover:bg-black/[0.04] border border-black/10 transition-colors flex items-center gap-1"
                   >
-                    Commission <ArrowRight size={11} />
+                    Inquire <ArrowRight size={11} />
                   </Link>
                 </div>
               </div>
@@ -544,12 +540,12 @@ export const HomePage: React.FC = () => {
                   Have a project in mind? Let's engineer it.
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  Connect directly with {companyName} leadership and verified developers. Tell us your goals, select your target discipline, and receive a transparent project blueprint in Indian Rupees (₹).
+                  Connect directly with {companyName} leadership and verified developers. Tell us your goals, select your target discipline, and receive a comprehensive project blueprint.
                 </p>
                 <div className="space-y-3">
                   {[
                     'Direct communication with lead developers — zero middlemen',
-                    'Fixed-scope deliverables with milestones in Indian Rupees (₹)',
+                    'Fixed-scope deliverables with milestone-based engineering sprints',
                     'Full source code ownership and verified creator attribution',
                   ].map((benefit) => (
                     <div key={benefit} className="flex items-center gap-2.5 text-xs text-slate-700">
@@ -612,16 +608,16 @@ export const HomePage: React.FC = () => {
                         </select>
                       </div>
                       <div>
-                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1">Estimated Budget (INR)</label>
+                        <label className="block text-[10px] font-mono uppercase tracking-wider text-slate-500 mb-1">Project Scope</label>
                         <select
                           value={inquiryBudget}
                           onChange={(e) => setInquiryBudget(e.target.value)}
                           className="w-full bg-white border border-black/10 rounded-xl text-slate-900 text-xs px-3.5 py-2.5 focus:border-black/30 focus:outline-none shadow-sm"
                         >
-                          <option value="₹25,000 - ₹50,000">₹25,000 - ₹50,000</option>
-                          <option value="₹50,000 - ₹1,50,000">₹50,000 - ₹1,50,000</option>
-                          <option value="₹1,50,000 - ₹5,00,000">₹1,50,000 - ₹5,00,000</option>
-                          <option value="₹5,00,000+">₹5,00,000+ (Enterprise)</option>
+                          <option value="MVP / Proof of Concept">MVP / Proof of Concept</option>
+                          <option value="Production Application">Production Application</option>
+                          <option value="Enterprise Microservices">Enterprise Microservices</option>
+                          <option value="Multi-Platform Ecosystem">Multi-Platform Ecosystem</option>
                         </select>
                       </div>
                     </div>

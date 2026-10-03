@@ -78,7 +78,7 @@ export const AboutPage: React.FC = () => {
               </div>
             </div>
             <div className="pt-5 border-t border-black/[0.06] flex items-center justify-between">
-              <Link to="/developers/ritesh-lingamallu" className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-black font-medium transition-colors group">
+              <Link to="/developers/riteshlingamallu8" className="inline-flex items-center gap-1.5 text-xs text-slate-600 hover:text-black font-medium transition-colors group">
                 Full Details <ArrowRight size={12} className="group-hover:translate-x-0.5 transition-transform" />
               </Link>
               <div className="flex gap-2">

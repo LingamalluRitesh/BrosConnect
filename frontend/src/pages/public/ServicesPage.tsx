@@ -89,7 +89,7 @@ export const ServicesPage: React.FC = () => {
         </h1>
         <p className="text-slate-600 text-base leading-relaxed max-w-2xl">
           From early-stage MVPs to complex distributed enterprise platforms, {companyName} verified developer network
-          delivers clean, maintainable software with transparent pricing in Indian Rupees (₹).
+          delivers clean, maintainable software with production-grade engineering excellence.
         </p>
       </div>
 
@@ -129,7 +129,7 @@ export const ServicesPage: React.FC = () => {
                   to="/contact"
                   className="px-4 py-1.5 rounded-full liquid-glass text-xs text-slate-700 hover:text-black hover:bg-slate-100 border border-black/10 transition-colors shadow-2xs"
                 >
-                  Get quote
+                  Inquire now
                 </Link>
               </div>
             </div>

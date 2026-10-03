@@ -21,7 +21,7 @@ export const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({
   const companyName = settings?.company_name || 'RMVS Web Services';
   const [projectName, setProjectName] = useState('');
   const [projectType, setProjectType] = useState('Web Application');
-  const [budgetRange, setBudgetRange] = useState('₹50,000 - ₹1,50,000');
+  const [budgetRange, setBudgetRange] = useState('Production Build');
   const [timeline, setTimeline] = useState('1-2 Months');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -142,17 +142,16 @@ export const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-slate-600 text-xs mb-1.5 font-medium">Budget Range (INR)</label>
+                <label className="block text-slate-600 text-xs mb-1.5 font-medium">Project Scope</label>
                 <select
                   value={budgetRange}
                   onChange={(e) => setBudgetRange(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none transition-colors shadow-2xs"
                 >
-                  <option value="< ₹50,000">&lt; ₹50,000</option>
-                  <option value="₹50,000 - ₹1,50,000">₹50,000 - ₹1,50,000</option>
-                  <option value="₹1,50,000 - ₹5,00,000">₹1,50,000 - ₹5,00,000</option>
-                  <option value="₹5,00,000 - ₹15,00,000">₹5,00,000 - ₹15,00,000</option>
-                  <option value="₹15,00,000+">₹15,00,000+</option>
+                  <option value="MVP / Proof of Concept">MVP / Proof of Concept</option>
+                  <option value="Production Build">Production Build</option>
+                  <option value="Enterprise Solution">Enterprise Solution</option>
+                  <option value="Multi-Platform Ecosystem">Multi-Platform Ecosystem</option>
                 </select>
               </div>
             </div>

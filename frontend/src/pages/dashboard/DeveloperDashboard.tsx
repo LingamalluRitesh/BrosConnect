@@ -354,7 +354,7 @@ export const DeveloperDashboard: React.FC = () => {
                           : `Target: ${inq.developer?.user?.full_name || 'Developer'}`}
                       </span>
                       <span>·</span>
-                      <span>Budget: {inq.budget_range ? `₹${inq.budget_range}` : 'Flexible'}</span>
+                      <span>Scope: {inq.budget_range || 'Production Build'}</span>
                       <span>·</span>
                       <span>Timeline: {inq.timeline || 'Flexible'}</span>
                     </div>
