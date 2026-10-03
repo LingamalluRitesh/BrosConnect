@@ -10,7 +10,6 @@ export const Footer: React.FC = () => {
   const companyName = settings?.company_name || 'RMVS Web Services';
   const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
   const logoUrl = settings?.logo_url || '/logo.png';
-  const copyright = settings?.footer_copyright || `© ${year} ${companyName}. All rights reserved.`;
 
   return (
     <footer className="bg-slate-50/90 border-t border-black/[0.08] mt-24 py-16 px-4 sm:px-6">
@@ -19,21 +18,30 @@ export const Footer: React.FC = () => {
           
           {/* Brand & Mission */}
           <div className="md:col-span-1 space-y-4">
-            <Link to="/" className="flex items-center gap-3">
+            <a href="https://rmvswebservices.onrender.com/" className="flex items-center gap-3 group">
               <img
                 src={logoUrl}
                 alt={companyName}
-                className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm"
+                className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm group-hover:ring-black/20 transition-all"
               />
               <div>
-                <span className="font-instrument italic text-slate-900 text-2xl leading-tight">
+                <span className="font-instrument italic text-slate-900 text-2xl leading-tight block group-hover:text-black transition-colors">
                   {companyName}
                 </span>
                 <p className="text-[8.5px] font-mono tracking-widest uppercase text-slate-400">
                   {tagline}
                 </p>
               </div>
-            </Link>
+            </a>
+            <div className="text-[11px] text-slate-500">
+              <span className="text-slate-400">Developer: </span>
+              <a
+                href="https://rmvswebservices.onrender.com/developers/riteshlingamallu8"
+                className="font-medium text-slate-700 hover:text-black underline transition-colors"
+              >
+                Ritesh Lingamallu
+              </a>
+            </div>
             <p className="text-slate-600 text-xs leading-relaxed">
               {settings?.description || 'Verified software engineering and enterprise digital delivery platform.'}
             </p>
@@ -120,12 +128,41 @@ export const Footer: React.FC = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-black/[0.06] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
-          <span>{copyright}</span>
-          <div className="flex flex-wrap items-center justify-center gap-4 text-slate-500">
-            <span>Leadership: CEO Ritesh Lingamallu</span>
-            <span className="w-1 h-1 rounded-full bg-slate-300" />
-            <span>Verified Software Platform</span>
+        <div className="border-t border-black/[0.06] pt-6 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-slate-500">
+          <div className="text-center sm:text-left space-y-1">
+            <p>
+              © {year}{' '}
+              <a
+                href="https://rmvswebservices.onrender.com/"
+                className="font-semibold text-slate-800 hover:text-black transition-colors"
+              >
+                RMVS WebServices
+              </a>
+              . All rights reserved.
+            </p>
+            <p className="text-[11px] text-slate-400">
+              Verified Software Platform • Enterprise Solutions
+            </p>
+          </div>
+
+          <div className="flex flex-col items-center sm:items-end text-center sm:text-right space-y-1">
+            <div>
+              <a
+                href="https://rmvswebservices.onrender.com/"
+                className="font-bold text-slate-900 hover:text-black text-sm tracking-tight transition-colors inline-block"
+              >
+                RMVS WebServices
+              </a>
+            </div>
+            <div className="text-xs text-slate-600">
+              <span className="text-slate-400">Developer Name: </span>
+              <a
+                href="https://rmvswebservices.onrender.com/developers/riteshlingamallu8"
+                className="font-semibold text-slate-900 hover:text-black underline transition-colors"
+              >
+                Ritesh Lingamallu
+              </a>
+            </div>
           </div>
         </div>
       </div>
