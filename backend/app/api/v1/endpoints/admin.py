@@ -56,22 +56,94 @@ async def get_admin_dashboard_stats(
         recent_activity=[ActivityLogOut.model_validate(l) for l in recent_logs]
     )
 
-@router.get("/developers", response_model=List[DeveloperProfileOut])
+@router.get("/developers")
 async def list_all_developers_for_ceo(
     admin: User = Depends(get_current_admin),
     db: AsyncSession = Depends(get_db)
 ):
     stmt = (
-        select(DeveloperProfile)
-        .join(DeveloperProfile.user)
+        select(User)
+        .where(User.role == "developer")
         .options(
-            selectinload(DeveloperProfile.user),
-            selectinload(DeveloperProfile.skills)
+            selectinload(User.developer_profile).selectinload(DeveloperProfile.skills)
         )
-        .order_by(DeveloperProfile.id.asc())
+        .order_by(User.id.asc())
     )
-    res = await db.execute(stmt)
-    return res.scalars().all()
+    devs = (await db.execute(stmt)).scalars().all()
+    output = []
+    for d in devs:
+        prof = d.developer_profile
+        skills_list = [{"id": s.id, "name": s.name} for s in prof.skills] if prof and prof.skills else []
+        output.append({
+            # Top-level user fields
+            "id": d.id,
+            "user_id": d.id,
+            "username": d.username,
+            "full_name": d.full_name,
+            "email": d.email,
+            "phone": d.phone,
+            "role": d.role,
+            "status": d.status,
+            "is_active": d.is_active,
+            "is_verified": d.is_verified,
+            "avatar_url": d.avatar_url,
+            "created_at": d.created_at.isoformat() if d.created_at else None,
+
+            # Top-level developer profile fields
+            "profile_id": prof.id if prof else None,
+            "title": prof.title if prof and prof.title else "Software Engineer",
+            "department": prof.department if prof and prof.department else "Core Engineering",
+            "short_bio": prof.short_bio if prof else None,
+            "bio": prof.bio if prof else None,
+            "location": prof.location if prof else None,
+            "availability": prof.availability if prof and prof.availability else "Available for Projects",
+            "years_experience": prof.years_experience if prof and prof.years_experience is not None else 1,
+            "github_url": prof.github_url if prof else None,
+            "linkedin_url": prof.linkedin_url if prof else None,
+            "portfolio_url": prof.portfolio_url if prof else None,
+            "resume_url": prof.resume_url if prof else None,
+            "skills": skills_list,
+
+            # Nested developer_profile object
+            "developer_profile": {
+                "id": prof.id if prof else None,
+                "user_id": d.id,
+                "title": prof.title if prof and prof.title else "Software Engineer",
+                "department": prof.department if prof and prof.department else "Core Engineering",
+                "short_bio": prof.short_bio if prof else None,
+                "bio": prof.bio if prof else None,
+                "location": prof.location if prof else None,
+                "availability": prof.availability if prof and prof.availability else "Available for Projects",
+                "years_experience": prof.years_experience if prof and prof.years_experience is not None else 1,
+                "github_url": prof.github_url if prof else None,
+                "linkedin_url": prof.linkedin_url if prof else None,
+                "portfolio_url": prof.portfolio_url if prof else None,
+                "resume_url": prof.resume_url if prof else None,
+                "skills": skills_list,
+            } if prof else {
+                "id": None,
+                "user_id": d.id,
+                "title": "Software Engineer",
+                "department": "Core Engineering",
+                "years_experience": 1,
+                "skills": []
+            },
+
+            # Nested user object
+            "user": {
+                "id": d.id,
+                "username": d.username,
+                "full_name": d.full_name,
+                "email": d.email,
+                "phone": d.phone,
+                "role": d.role,
+                "status": d.status,
+                "is_active": d.is_active,
+                "is_verified": d.is_verified,
+                "avatar_url": d.avatar_url,
+            }
+        })
+    return output
 
 @router.post("/developers", response_model=DeveloperProfileOut)
 async def create_developer_by_ceo(
@@ -527,45 +599,6 @@ async def list_all_inquiries(
     result = await db.execute(stmt)
     return result.scalars().all()
 
-@router.get("/developers")
-async def list_developers_for_admin(
-    admin: User = Depends(get_current_admin),
-    db: AsyncSession = Depends(get_db)
-):
-    stmt = (
-        select(User)
-        .where(User.role == "developer")
-        .options(
-            selectinload(User.developer_profile).selectinload(DeveloperProfile.skills)
-        )
-        .order_by(User.id.asc())
-    )
-    devs = (await db.execute(stmt)).scalars().all()
-    output = []
-    for d in devs:
-        output.append({
-            "id": d.id,
-            "username": d.username,
-            "full_name": d.full_name,
-            "email": d.email,
-            "phone": d.phone,
-            "role": d.role,
-            "status": d.status,
-            "is_active": d.is_active,
-            "is_verified": d.is_verified,
-            "created_at": d.created_at.isoformat() if d.created_at else None,
-            "developer_profile": {
-                "id": d.developer_profile.id if d.developer_profile else None,
-                "title": d.developer_profile.title if d.developer_profile else "Software Engineer",
-                "department": d.developer_profile.department if d.developer_profile else "Core Engineering",
-                "short_bio": d.developer_profile.short_bio if d.developer_profile else None,
-                "bio": d.developer_profile.bio if d.developer_profile else None,
-                "location": d.developer_profile.location if d.developer_profile else None,
-                "years_experience": d.developer_profile.years_experience if d.developer_profile else 1,
-                "skills": [{"id": s.id, "name": s.name} for s in d.developer_profile.skills] if d.developer_profile and d.developer_profile.skills else []
-            } if d.developer_profile else None
-        })
-    return output
 
 @router.put("/developers/{dev_id}/designation")
 async def update_developer_designation(
@@ -632,18 +665,49 @@ async def update_developer_status(
         user.status = payload["status"]
     if "is_active" in payload:
         user.is_active = payload["is_active"]
+    if "is_verified" in payload:
+        user.is_verified = payload["is_verified"]
 
     log = ActivityLog(
         user_id=admin.id,
         action="DEVELOPER_STATUS_UPDATED",
         entity_type="developer",
         entity_id=user.id,
-        details=f"CEO updated status of {user.full_name} to '{user.status}' (active={user.is_active})",
+        details=f"CEO updated status of {user.full_name} to '{user.status}' (active={user.is_active}, verified={user.is_verified})",
         ip_address=request.client.host if request.client else None
     )
     db.add(log)
     await db.commit()
-    return {"status": "success", "user_status": user.status, "is_active": user.is_active}
+    return {"status": "success", "user_status": user.status, "is_active": user.is_active, "is_verified": user.is_verified}
+
+@router.put("/developers/{dev_id}/verify")
+async def toggle_developer_verify(
+    dev_id: int,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    dev = (await db.execute(select(DeveloperProfile).where(DeveloperProfile.id == dev_id))).scalar_one_or_none()
+    if dev:
+        user = (await db.execute(select(User).where(User.id == dev.user_id))).scalar_one_or_none()
+    else:
+        user = (await db.execute(select(User).where(User.id == dev_id))).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="Developer not found")
+
+    user.is_verified = not user.is_verified
+    action_str = "verified" if user.is_verified else "unverified"
+    log = ActivityLog(
+        user_id=admin.id,
+        action="DEVELOPER_VERIFIED" if user.is_verified else "DEVELOPER_UNVERIFIED",
+        entity_type="developer",
+        entity_id=user.id,
+        details=f"CEO {action_str} developer {user.full_name} (@{user.username})",
+        ip_address=request.client.host if request.client else None
+    )
+    db.add(log)
+    await db.commit()
+    return {"status": "success", "is_verified": user.is_verified, "user_id": user.id}
 
 @router.delete("/developers/{dev_id}")
 async def delete_developer_direct(

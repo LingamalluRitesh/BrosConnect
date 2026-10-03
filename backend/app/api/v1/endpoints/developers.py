@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, or_
+from sqlalchemy import select, or_, desc
 from sqlalchemy.orm import selectinload
 from app.core.database import get_db
 from app.models import User, DeveloperProfile, Skill, ProjectDeveloper, Project
@@ -23,12 +23,16 @@ async def list_developers(
         .join(DeveloperProfile.user)
         .where(
             User.is_active == True,
-            User.is_verified == True,
             DeveloperProfile.is_public == True
         )
         .options(
             selectinload(DeveloperProfile.user),
             selectinload(DeveloperProfile.skills)
+        )
+        .order_by(
+            User.is_verified.desc(),
+            DeveloperProfile.views_count.desc(),
+            DeveloperProfile.id.asc()
         )
     )
 

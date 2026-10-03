@@ -167,22 +167,23 @@ export const AdminDashboard: React.FC = () => {
   };
 
   // 2. Open Edit Developer
+  // 2. Open Edit Developer
   const openEditDeveloper = (dev: any) => {
     setEditingDev(dev);
     const p = dev.developer_profile;
     setEditDevForm({
-      title: p?.title || '',
-      department: p?.department || 'Core Engineering',
-      status: dev.status || 'approved',
-      is_active: dev.is_active ?? true,
-      full_name: dev.full_name || '',
-      bio: p?.bio || p?.short_bio || '',
-      skills: (p?.skills || []).map((s: any) => s.name).join(', '),
-      location: p?.location || '',
-      years_experience: p?.years_experience || 1,
-      github_url: p?.github_url || '',
-      linkedin_url: p?.linkedin_url || '',
-      portfolio_url: p?.portfolio_url || '',
+      title: dev.title || p?.title || 'Software Engineer',
+      department: dev.department || p?.department || 'Core Engineering',
+      status: dev.status || dev.user?.status || 'approved',
+      is_active: dev.is_active ?? dev.user?.is_active ?? true,
+      full_name: dev.full_name || dev.user?.full_name || '',
+      bio: dev.bio || dev.short_bio || p?.bio || p?.short_bio || '',
+      skills: (dev.skills || p?.skills || []).map((s: any) => s.name || s).join(', '),
+      location: dev.location || p?.location || '',
+      years_experience: dev.years_experience ?? p?.years_experience ?? 1,
+      github_url: dev.github_url || p?.github_url || '',
+      linkedin_url: dev.linkedin_url || p?.linkedin_url || '',
+      portfolio_url: dev.portfolio_url || p?.portfolio_url || '',
     });
   };
 
@@ -191,23 +192,37 @@ export const AdminDashboard: React.FC = () => {
     e.preventDefault();
     if (!editingDev) return;
     try {
-      await api.put(`/admin/developers/${editingDev.id}/designation`, {
+      const devId = editingDev.id || editingDev.user_id || editingDev.user?.id;
+      await api.put(`/admin/developers/${devId}/designation`, {
         title: editDevForm.title,
         department: editDevForm.department,
       });
 
-      if (editDevForm.status !== editingDev.status) {
-        await api.put(`/admin/developers/${editingDev.id}/status`, {
-          status: editDevForm.status,
-          is_active: editDevForm.is_active,
-        });
-      }
+      await api.put(`/admin/developers/${devId}/status`, {
+        status: editDevForm.status,
+        is_active: editDevForm.is_active,
+      });
 
-      showNotification(`Developer ${editingDev.full_name} updated successfully!`);
+      const name = editingDev.full_name || editingDev.user?.full_name || 'Developer';
+      showNotification(`Developer ${name} updated successfully!`);
       setEditingDev(null);
       loadAdminData();
     } catch (err: any) {
       showNotification(err.response?.data?.detail || 'Failed to update developer', true);
+    }
+  };
+
+  // Toggle Verify Developer
+  const handleToggleVerify = async (dev: any) => {
+    try {
+      const devId = dev.id || dev.user_id || dev.user?.id;
+      const res = await api.put(`/admin/developers/${devId}/verify`);
+      const newStatus = res.data.is_verified ? 'verified (badge visible)' : 'unverified';
+      const name = dev.full_name || dev.user?.full_name || 'Developer';
+      showNotification(`${name} is now ${newStatus}!`);
+      loadAdminData();
+    } catch (err: any) {
+      showNotification(err.response?.data?.detail || 'Failed to toggle verification', true);
     }
   };
 
@@ -484,70 +499,112 @@ export const AdminDashboard: React.FC = () => {
                         </td>
                       </tr>
                     ) : (
-                      developers.map((dev) => (
-                        <tr key={dev.id} className="hover:bg-black/[0.01] transition-colors">
-                          <td className="py-3 px-4">
-                            <div className="flex items-center gap-3">
-                              {dev.avatar_url ? (
-                                <img src={dev.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10" />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-instrument italic text-slate-900 text-sm">
-                                  {dev.full_name?.charAt(0)}
+                      developers.map((dev) => {
+                        const devId = dev.id || dev.user_id || dev.user?.id;
+                        const fullName = dev.full_name || dev.user?.full_name || 'Unnamed Developer';
+                        const username = dev.username || dev.user?.username || '';
+                        const email = dev.email || dev.user?.email || 'No email';
+                        const avatarUrl = dev.avatar_url || dev.user?.avatar_url;
+                        const title = dev.title || dev.developer_profile?.title || 'Software Engineer';
+                        const department = dev.department || dev.developer_profile?.department || 'Core Engineering';
+                        const status = dev.status || dev.user?.status || 'approved';
+                        const isVerified = dev.is_verified ?? dev.user?.is_verified ?? false;
+                        const yearsExp = dev.years_experience ?? dev.developer_profile?.years_experience ?? 0;
+
+                        return (
+                          <tr key={devId} className="hover:bg-black/[0.01] transition-colors">
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-3">
+                                {avatarUrl ? (
+                                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10" />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-instrument italic text-slate-900 text-sm">
+                                    {fullName.charAt(0)}
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                    {fullName}
+                                    {isVerified && (
+                                      <CheckCircle2 size={13} className="text-emerald-600 fill-emerald-100" />
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 font-mono">
+                                    {username ? `@${username}` : ''} {username && email ? '·' : ''} {email}
+                                  </div>
                                 </div>
-                              )}
-                              <div>
-                                <div className="font-semibold text-slate-900">{dev.full_name}</div>
-                                <div className="text-[11px] text-slate-400 font-mono">@{dev.username} · {dev.email}</div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="font-mono text-slate-800 font-medium">
-                              {dev.developer_profile?.title || 'Software Engineer'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
-                              {dev.developer_profile?.department || 'Engineering'}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                              dev.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                            }`}>
-                              {dev.status}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-slate-600 font-mono">
-                            {dev.developer_profile?.years_experience || 0} yrs
-                          </td>
-                          <td className="py-3 px-4 text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <button
-                                onClick={() => openEditDeveloper(dev)}
-                                className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
-                                title="Edit Designation & Profile"
-                              >
-                                <Edit3 size={13} />
-                              </button>
-                              <button
-                                onClick={() => { setResetPwUser(dev); setNewPassword(''); }}
-                                className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
-                                title="Reset Password"
-                              >
-                                <Key size={13} />
-                              </button>
-                              <button
-                                onClick={() => handleDeleteDeveloper(dev.id, dev.full_name)}
-                                className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
-                                title="Delete Developer"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      ))
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="font-mono text-slate-800 font-medium">
+                                {title}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
+                                {department}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                                  status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {status}
+                                </span>
+                                {isVerified ? (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    Verified
+                                  </span>
+                                ) : (
+                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-100 text-slate-500 border border-slate-200">
+                                    Unverified
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-slate-600 font-mono">
+                              {yearsExp} yrs
+                            </td>
+                            <td className="py-3 px-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                <button
+                                  onClick={() => handleToggleVerify(dev)}
+                                  className={`p-1.5 rounded-lg border transition-colors ${
+                                    isVerified
+                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
+                                      : 'liquid-glass border-black/10 text-slate-400 hover:text-emerald-600 hover:border-emerald-300'
+                                  }`}
+                                  title={isVerified ? "Revoke Verification" : "Verify Developer (Show Verified Badge)"}
+                                >
+                                  <ShieldCheck size={13} />
+                                </button>
+                                <button
+                                  onClick={() => openEditDeveloper(dev)}
+                                  className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                  title="Edit Designation & Profile"
+                                >
+                                  <Edit3 size={13} />
+                                </button>
+                                <button
+                                  onClick={() => { setResetPwUser({ id: devId, full_name: fullName }); setNewPassword(''); }}
+                                  className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                  title="Reset Password"
+                                >
+                                  <Key size={13} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteDeveloper(devId, fullName)}
+                                  className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
+                                  title="Delete Developer"
+                                >
+                                  <Trash2 size={13} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
                     )}
                   </tbody>
                 </table>
@@ -1000,7 +1057,7 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
                 <div>
                   <h3 className="font-instrument italic text-2xl text-slate-950">Edit Developer</h3>
-                  <p className="text-slate-400 text-xs font-mono">{editingDev.full_name} (@{editingDev.username})</p>
+                  <p className="text-slate-400 text-xs font-mono">{editingDev.full_name || editingDev.user?.full_name} (@{editingDev.username || editingDev.user?.username})</p>
                 </div>
                 <button onClick={() => setEditingDev(null)} className="p-1 rounded-full text-slate-400 hover:text-black">
                   <X size={18} />

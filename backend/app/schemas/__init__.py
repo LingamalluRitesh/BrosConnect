@@ -67,7 +67,10 @@ class UserBrief(BaseModel):
     full_name: str
     role: str # super_admin (CEO), developer, client
     avatar_url: Optional[str] = None
-    is_verified: bool
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    status: Optional[str] = "approved"
+    is_verified: bool = False
     is_active: bool = True
     class Config:
         from_attributes = True
