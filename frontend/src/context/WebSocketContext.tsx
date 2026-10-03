@@ -50,6 +50,7 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       wsUrl = `${apiHost}/ws?token=${token}`;
     }
 
+
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
 
