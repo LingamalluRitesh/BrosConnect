@@ -41,7 +41,14 @@ export const WebSocketProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host; // proxied by Vite in dev to 127.0.0.1:8000
-    const wsUrl = `${protocol}//${host}/ws?token=${token}`;
+    
+    let wsUrl = `${protocol}//${host}/ws?token=${token}`;
+    if (import.meta.env.VITE_WS_URL) {
+      wsUrl = `${import.meta.env.VITE_WS_URL.replace(/\/+$/, '')}?token=${token}`;
+    } else if (import.meta.env.VITE_API_URL) {
+      const apiHost = import.meta.env.VITE_API_URL.replace(/^http/, 'ws').replace(/\/+$/, '');
+      wsUrl = `${apiHost}/ws?token=${token}`;
+    }
 
     const ws = new WebSocket(wsUrl);
     wsRef.current = ws;
