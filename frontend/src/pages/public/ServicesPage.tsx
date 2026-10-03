@@ -142,7 +142,7 @@ export const ServicesPage: React.FC = () => {
         <div className="liquid-glass rounded-3xl p-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 border border-black/[0.08] shadow-sm bg-white/70">
           <div>
             <h2 className="font-instrument italic text-slate-950 text-3xl mb-2">
-              <em>Ready to commission</em> your project?
+              <em>Ready to build</em> your project?
             </h2>
             <p className="text-slate-500 text-sm">Talk to our technical leadership directly.</p>
           </div>

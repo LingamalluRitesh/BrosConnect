@@ -54,7 +54,7 @@ export const DevelopersDirectory: React.FC = () => {
         </h1>
         <p className="text-slate-600 text-sm mt-3 max-w-xl leading-relaxed">
           Browse our hand-verified roster of senior developers, AI engineers, and cloud specialists.
-          Commission work directly without middleman markups.
+          Collaborate directly without middleman markups.
         </p>
       </div>
 

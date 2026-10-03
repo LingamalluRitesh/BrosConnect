@@ -156,7 +156,7 @@ export const HomePage: React.FC = () => {
               to="/register"
               className="px-8 py-3.5 rounded-full bg-black text-white text-sm font-semibold hover:bg-slate-800 shadow-md transition-all flex items-center gap-2"
             >
-              Commission Project <ArrowRight size={15} />
+              Start a Project <ArrowRight size={15} />
             </Link>
             <Link
               to="/projects"
