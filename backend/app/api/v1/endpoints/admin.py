@@ -709,6 +709,83 @@ async def toggle_developer_verify(
     await db.commit()
     return {"status": "success", "is_verified": user.is_verified, "user_id": user.id}
 
+@router.post("/developers/{dev_id}/approve")
+async def approve_registered_developer(
+    dev_id: int,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    dev = (await db.execute(select(DeveloperProfile).where(DeveloperProfile.id == dev_id).options(selectinload(DeveloperProfile.user)))).scalar_one_or_none()
+    if dev:
+        user = dev.user
+    else:
+        user = (await db.execute(select(User).where(User.id == dev_id).options(selectinload(User.developer_profile)))).scalar_one_or_none()
+        dev = user.developer_profile if user else None
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Developer not found")
+
+    user.status = "approved"
+    user.is_verified = True
+    user.is_active = True
+    if dev:
+        dev.is_public = True
+
+    notif = Notification(
+        user_id=user.id,
+        title="Account Approved & Verified!",
+        message=f"Congratulations {user.full_name}! Your developer application has been approved by CEO {admin.full_name}. Your profile is now live in the verified roster.",
+        type="approval",
+        link=f"/developers/{user.username}"
+    )
+    db.add(notif)
+
+    log = ActivityLog(
+        user_id=admin.id,
+        action="DEVELOPER_APPROVED",
+        entity_type="developer",
+        entity_id=user.id,
+        details=f"CEO approved and verified developer {user.full_name} (@{user.username}). Profile is now live.",
+        ip_address=request.client.host if request.client else None
+    )
+    db.add(log)
+    await db.commit()
+
+    return {"status": "success", "message": f"{user.full_name} is now approved and verified on the public roster."}
+
+@router.post("/developers/{dev_id}/reject")
+async def reject_registered_developer(
+    dev_id: int,
+    request: Request,
+    admin: User = Depends(get_current_admin),
+    db: AsyncSession = Depends(get_db)
+):
+    dev = (await db.execute(select(DeveloperProfile).where(DeveloperProfile.id == dev_id).options(selectinload(DeveloperProfile.user)))).scalar_one_or_none()
+    if dev:
+        user = dev.user
+    else:
+        user = (await db.execute(select(User).where(User.id == dev_id))).scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Developer not found")
+
+    user.status = "rejected"
+    user.is_verified = False
+
+    log = ActivityLog(
+        user_id=admin.id,
+        action="DEVELOPER_REJECTED",
+        entity_type="developer",
+        entity_id=user.id,
+        details=f"CEO rejected developer application for {user.full_name} (@{user.username}).",
+        ip_address=request.client.host if request.client else None
+    )
+    db.add(log)
+    await db.commit()
+
+    return {"status": "success", "message": f"Developer application for {user.full_name} has been rejected."}
+
 @router.delete("/developers/{dev_id}")
 async def delete_developer_direct(
     dev_id: int,

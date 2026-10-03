@@ -226,6 +226,33 @@ export const AdminDashboard: React.FC = () => {
     }
   };
 
+  // Approve Registered Developer (Make Profile Live)
+  const handleApproveDeveloper = async (dev: any) => {
+    try {
+      const devId = dev.id || dev.user_id || dev.user?.id;
+      await api.post(`/admin/developers/${devId}/approve`);
+      const name = dev.full_name || dev.user?.full_name || 'Developer';
+      showNotification(`${name} approved successfully! Profile is now live on the website.`);
+      loadAdminData();
+    } catch (err: any) {
+      showNotification(err.response?.data?.detail || 'Failed to approve developer', true);
+    }
+  };
+
+  // Reject Registered Developer
+  const handleRejectDeveloper = async (dev: any) => {
+    const name = dev.full_name || dev.user?.full_name || 'Developer';
+    if (!window.confirm(`Are you sure you want to reject the application for ${name}?`)) return;
+    try {
+      const devId = dev.id || dev.user_id || dev.user?.id;
+      await api.post(`/admin/developers/${devId}/reject`);
+      showNotification(`Application for ${name} rejected.`);
+      loadAdminData();
+    } catch (err: any) {
+      showNotification(err.response?.data?.detail || 'Failed to reject application', true);
+    }
+  };
+
   // 4. Delete Developer
   const handleDeleteDeveloper = async (devId: number, name: string) => {
     if (!window.confirm(`Are you sure you want to completely remove developer ${name}?`)) return;
@@ -462,156 +489,317 @@ export const AdminDashboard: React.FC = () => {
           </div>
         )}
 
-        {/* ── TAB 2: TEAM MANAGEMENT ── */}
-        {activeTab === 'team' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-instrument italic text-2xl text-slate-950">Core Engineering Squad</h3>
-                <p className="text-slate-500 text-xs">Manage developer accounts, update dynamic designations, and assign departments.</p>
+        {/* ── TAB 2: TEAM MANAGEMENT & REGISTRATIONS ── */}
+        {activeTab === 'team' && (() => {
+          const newRegisteredDevelopers = developers.filter(
+            (d) => (d.status === 'pending' || !d.is_verified)
+          );
+          const activeApprovedDevelopers = developers.filter(
+            (d) => d.status === 'approved' && d.is_verified
+          );
+
+          return (
+            <div className="space-y-8">
+              {/* Header */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h3 className="font-instrument italic text-2xl text-slate-950">Engineering Team &amp; Registrations</h3>
+                  <p className="text-slate-500 text-xs">
+                    Review and approve new registered developers, manage core engineers, and update dynamic designations.
+                  </p>
+                </div>
+                <button
+                  onClick={() => setIsAddDevOpen(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm self-start sm:self-auto"
+                >
+                  <UserPlus size={13} /> Add Developer
+                </button>
               </div>
-              <button
-                onClick={() => setIsAddDevOpen(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
-              >
-                <UserPlus size={13} /> Add Developer
-              </button>
-            </div>
 
-            <div className="liquid-glass rounded-3xl border border-black/[0.08] overflow-hidden shadow-sm bg-white/70">
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead className="bg-slate-50/80 border-b border-black/[0.06] text-slate-500 uppercase font-mono tracking-wider text-[10px]">
-                    <tr>
-                      <th className="py-3.5 px-4">Developer</th>
-                      <th className="py-3.5 px-4">Dynamic Designation</th>
-                      <th className="py-3.5 px-4">Department</th>
-                      <th className="py-3.5 px-4">Status</th>
-                      <th className="py-3.5 px-4">Experience</th>
-                      <th className="py-3.5 px-4 text-right">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-black/[0.04]">
-                    {developers.length === 0 ? (
-                      <tr>
-                        <td colSpan={6} className="py-12 text-center text-slate-400 font-instrument italic text-sm">
-                          No developers configured yet. Click "Add Developer" to create real accounts.
-                        </td>
-                      </tr>
-                    ) : (
-                      developers.map((dev) => {
-                        const devId = dev.id || dev.user_id || dev.user?.id;
-                        const fullName = dev.full_name || dev.user?.full_name || 'Unnamed Developer';
-                        const username = dev.username || dev.user?.username || '';
-                        const email = dev.email || dev.user?.email || 'No email';
-                        const avatarUrl = dev.avatar_url || dev.user?.avatar_url;
-                        const title = dev.title || dev.developer_profile?.title || 'Software Engineer';
-                        const department = dev.department || dev.developer_profile?.department || 'Core Engineering';
-                        const status = dev.status || dev.user?.status || 'approved';
-                        const isVerified = dev.is_verified ?? dev.user?.is_verified ?? false;
-                        const yearsExp = dev.years_experience ?? dev.developer_profile?.years_experience ?? 0;
+              {/* ── SECTION 1: NEW REGISTERED DEVELOPERS ── */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <h4 className="font-instrument italic text-xl text-slate-950">
+                      New Registered Developers
+                    </h4>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-amber-100 text-amber-800 border border-amber-200">
+                      {newRegisteredDevelopers.length} Pending Review
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono hidden sm:block">
+                    Approve applicants to display them immediately on the public website.
+                  </p>
+                </div>
 
-                        return (
-                          <tr key={devId} className="hover:bg-black/[0.01] transition-colors">
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-3">
-                                {avatarUrl ? (
-                                  <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10" />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-instrument italic text-slate-900 text-sm">
-                                    {fullName.charAt(0)}
-                                  </div>
-                                )}
-                                <div>
-                                  <div className="font-semibold text-slate-900 flex items-center gap-1.5">
-                                    {fullName}
-                                    {isVerified && (
-                                      <CheckCircle2 size={13} className="text-emerald-600 fill-emerald-100" />
-                                    )}
-                                  </div>
-                                  <div className="text-[11px] text-slate-400 font-mono">
-                                    {username ? `@${username}` : ''} {username && email ? '·' : ''} {email}
-                                  </div>
-                                </div>
-                              </div>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="font-mono text-slate-800 font-medium">
-                                {title}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
-                                {department}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
-                                  status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {status}
-                                </span>
-                                {isVerified ? (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                    Verified
-                                  </span>
-                                ) : (
-                                  <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-100 text-slate-500 border border-slate-200">
-                                    Unverified
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-3 px-4 text-slate-600 font-mono">
-                              {yearsExp} yrs
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                <button
-                                  onClick={() => handleToggleVerify(dev)}
-                                  className={`p-1.5 rounded-lg border transition-colors ${
-                                    isVerified
-                                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300'
-                                      : 'liquid-glass border-black/10 text-slate-400 hover:text-emerald-600 hover:border-emerald-300'
-                                  }`}
-                                  title={isVerified ? "Revoke Verification" : "Verify Developer (Show Verified Badge)"}
-                                >
-                                  <ShieldCheck size={13} />
-                                </button>
-                                <button
-                                  onClick={() => openEditDeveloper(dev)}
-                                  className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
-                                  title="Edit Designation & Profile"
-                                >
-                                  <Edit3 size={13} />
-                                </button>
-                                <button
-                                  onClick={() => { setResetPwUser({ id: devId, full_name: fullName }); setNewPassword(''); }}
-                                  className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
-                                  title="Reset Password"
-                                >
-                                  <Key size={13} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteDeveloper(devId, fullName)}
-                                  className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
-                                  title="Delete Developer"
-                                >
-                                  <Trash2 size={13} />
-                                </button>
-                              </div>
+                <div className="liquid-glass rounded-3xl border border-amber-200/70 overflow-hidden shadow-sm bg-white/80">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-amber-50/60 border-b border-amber-200/50 text-slate-600 uppercase font-mono tracking-wider text-[10px]">
+                        <tr>
+                          <th className="py-3.5 px-4">Applicant Developer</th>
+                          <th className="py-3.5 px-4">Desired Title</th>
+                          <th className="py-3.5 px-4">Department</th>
+                          <th className="py-3.5 px-4">Experience &amp; Skills</th>
+                          <th className="py-3.5 px-4">Status</th>
+                          <th className="py-3.5 px-4 text-right">Approval Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-black/[0.04]">
+                        {newRegisteredDevelopers.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-10 text-center text-slate-400 font-instrument italic text-sm">
+                              No pending developer registrations. All applicants have been reviewed and approved!
                             </td>
                           </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                        ) : (
+                          newRegisteredDevelopers.map((dev) => {
+                            const devId = dev.id || dev.user_id || dev.user?.id;
+                            const fullName = dev.full_name || dev.user?.full_name || 'Unnamed Developer';
+                            const username = dev.username || dev.user?.username || '';
+                            const email = dev.email || dev.user?.email || 'No email';
+                            const phone = dev.phone || dev.user?.phone;
+                            const avatarUrl = dev.avatar_url || dev.user?.avatar_url;
+                            const title = dev.title || dev.developer_profile?.title || 'Software Engineer';
+                            const department = dev.department || dev.developer_profile?.department || 'Core Engineering';
+                            const yearsExp = dev.years_experience ?? dev.developer_profile?.years_experience ?? 1;
+                            const skills = dev.skills || dev.developer_profile?.skills || [];
+
+                            return (
+                              <tr key={devId} className="hover:bg-amber-50/30 transition-colors">
+                                <td className="py-3.5 px-4">
+                                  <div className="flex items-center gap-3">
+                                    {avatarUrl ? (
+                                      <img src={avatarUrl} alt="" className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10" />
+                                    ) : (
+                                      <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center font-instrument italic font-semibold text-sm">
+                                        {fullName.charAt(0)}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="font-semibold text-slate-900">{fullName}</div>
+                                      <div className="text-[11px] text-slate-400 font-mono">
+                                        {username ? `@${username}` : ''} {username && email ? '·' : ''} {email}
+                                        {phone ? ` · ${phone}` : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className="font-mono text-slate-800 font-medium">{title}</span>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
+                                    {department}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <div className="space-y-1">
+                                    <span className="text-slate-600 font-mono">{yearsExp} yrs exp</span>
+                                    {skills.length > 0 && (
+                                      <div className="flex flex-wrap gap-1">
+                                        {skills.slice(0, 3).map((s: any) => (
+                                          <span key={s.id || s.name || s} className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-slate-100 text-slate-600">
+                                            {s.name || s}
+                                          </span>
+                                        ))}
+                                        {skills.length > 3 && (
+                                          <span className="text-[9px] font-mono text-slate-400">+{skills.length - 3}</span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-amber-100 text-amber-800 border border-amber-200">
+                                    Pending Review
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => handleApproveDeveloper(dev)}
+                                      className="px-3 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors"
+                                      title="Approve & Publish to Website"
+                                    >
+                                      <Check size={12} />
+                                      <span>Approve &amp; Go Live</span>
+                                    </button>
+                                    <button
+                                      onClick={() => handleRejectDeveloper(dev)}
+                                      className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
+                                      title="Reject Application"
+                                    >
+                                      <X size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => openEditDeveloper(dev)}
+                                      className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                      title="Edit Profile Details"
+                                    >
+                                      <Edit3 size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteDeveloper(devId, fullName)}
+                                      className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
+                                      title="Delete"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* ── SECTION 2: CORE ENGINEERING SQUAD (APPROVED) ── */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <h4 className="font-instrument italic text-xl text-slate-950">
+                      Core Engineering Squad
+                    </h4>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-medium bg-emerald-100 text-emerald-800 border border-emerald-200">
+                      {activeApprovedDevelopers.length} Live on Website
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 font-mono hidden sm:block">
+                    Verified engineers displayed on the public roster.
+                  </p>
+                </div>
+
+                <div className="liquid-glass rounded-3xl border border-black/[0.08] overflow-hidden shadow-sm bg-white/70">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="bg-slate-50/80 border-b border-black/[0.06] text-slate-500 uppercase font-mono tracking-wider text-[10px]">
+                        <tr>
+                          <th className="py-3.5 px-4">Developer</th>
+                          <th className="py-3.5 px-4">Dynamic Designation</th>
+                          <th className="py-3.5 px-4">Department</th>
+                          <th className="py-3.5 px-4">Status &amp; Verification</th>
+                          <th className="py-3.5 px-4">Experience</th>
+                          <th className="py-3.5 px-4 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-black/[0.04]">
+                        {activeApprovedDevelopers.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-12 text-center text-slate-400 font-instrument italic text-sm">
+                              No approved developers yet. Approve registered developers above or click "Add Developer".
+                            </td>
+                          </tr>
+                        ) : (
+                          activeApprovedDevelopers.map((dev) => {
+                            const devId = dev.id || dev.user_id || dev.user?.id;
+                            const fullName = dev.full_name || dev.user?.full_name || 'Unnamed Developer';
+                            const username = dev.username || dev.user?.username || '';
+                            const email = dev.email || dev.user?.email || 'No email';
+                            const phone = dev.phone || dev.user?.phone;
+                            const avatarUrl = dev.avatar_url || dev.user?.avatar_url;
+                            const title = dev.title || dev.developer_profile?.title || 'Software Engineer';
+                            const department = dev.department || dev.developer_profile?.department || 'Core Engineering';
+                            const status = dev.status || dev.user?.status || 'approved';
+                            const isVerified = dev.is_verified ?? dev.user?.is_verified ?? true;
+                            const yearsExp = dev.years_experience ?? dev.developer_profile?.years_experience ?? 0;
+
+                            return (
+                              <tr key={devId} className="hover:bg-black/[0.01] transition-colors">
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-3">
+                                    {avatarUrl ? (
+                                      <img src={avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10" />
+                                    ) : (
+                                      <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-instrument italic text-slate-900 text-sm">
+                                        {fullName.charAt(0)}
+                                      </div>
+                                    )}
+                                    <div>
+                                      <div className="font-semibold text-slate-900 flex items-center gap-1.5">
+                                        {fullName}
+                                        {isVerified && (
+                                          <CheckCircle2 size={13} className="text-emerald-600 fill-emerald-100" />
+                                        )}
+                                      </div>
+                                      <div className="text-[11px] text-slate-400 font-mono">
+                                        {username ? `@${username}` : ''} {username && email ? '·' : ''} {email}
+                                        {phone ? ` · ${phone}` : ''}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="font-mono text-slate-800 font-medium">
+                                    {title}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
+                                    {department}
+                                  </span>
+                                </td>
+                                <td className="py-3 px-4">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-emerald-100 text-emerald-800">
+                                      {status}
+                                    </span>
+                                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                      Verified &amp; Live
+                                    </span>
+                                  </div>
+                                </td>
+                                <td className="py-3 px-4 text-slate-600 font-mono">
+                                  {yearsExp} yrs
+                                </td>
+                                <td className="py-3 px-4 text-right">
+                                  <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      onClick={() => handleToggleVerify(dev)}
+                                      className="p-1.5 rounded-lg border bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-300 transition-colors"
+                                      title="Toggle Verification Status"
+                                    >
+                                      <ShieldCheck size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => openEditDeveloper(dev)}
+                                      className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                      title="Edit Designation & Profile"
+                                    >
+                                      <Edit3 size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => { setResetPwUser({ id: devId, full_name: fullName }); setNewPassword(''); }}
+                                      className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                      title="Reset Password"
+                                    >
+                                      <Key size={13} />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteDeveloper(devId, fullName)}
+                                      className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
+                                      title="Delete Developer"
+                                    >
+                                      <Trash2 size={13} />
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── TAB 3: PROJECTS ── */}
         {activeTab === 'projects' && (

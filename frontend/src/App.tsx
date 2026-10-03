@@ -55,6 +55,7 @@ const AppShell: React.FC = () => {
           <Route path="/developer/dashboard" element={<DeveloperDashboard />} />
           <Route path="/client/dashboard" element={<DeveloperDashboard />} />
           <Route path="/dashboard/my-projects" element={<MyProjectsPage />} />
+          <Route path="/dashboard/projects" element={<MyProjectsPage />} />
           <Route path="/dashboard/inquiries" element={<InquiriesPage />} />
           <Route path="/community" element={<CommunityChatPage />} />
           <Route path="/messages" element={<DirectMessagesPage />} />

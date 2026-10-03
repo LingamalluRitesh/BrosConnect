@@ -163,9 +163,16 @@ export const DeveloperDashboard: React.FC = () => {
                   <CheckCircle2 size={18} className="text-emerald-600" />
                 )}
               </div>
-              <p className="text-xs text-slate-400 font-mono mt-0.5">
-                @{user.username} · {user.role.toUpperCase()}
-              </p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xs text-slate-400 font-mono">
+                  @{user.username} · {user.role.toUpperCase()}
+                </span>
+                {isApproved && (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                    <CheckCircle2 size={10} /> Verified
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-600 mt-1 font-medium">
                 {isDeveloper
                   ? user.developer_profile?.title || 'Full-Stack Developer'
@@ -193,10 +200,10 @@ export const DeveloperDashboard: React.FC = () => {
               </Link>
             )}
 
-            {isDeveloper && isApproved && (
+            {isDeveloper && (
               <Link
                 to="/dashboard/my-projects?action=new"
-                className="liquid-glass text-slate-900 rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 border border-black/10 hover:bg-slate-50 transition-all shadow-2xs"
+                className="bg-black text-white rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-800 transition-all shadow-sm"
               >
                 <Plus size={13} />
                 <span>Add Project</span>
@@ -366,6 +373,108 @@ export const DeveloperDashboard: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* ── Projects Section ── */}
+        {isDeveloper && (
+          <div className="liquid-glass rounded-3xl p-6 sm:p-8 border border-black/[0.08] shadow-sm bg-white/70 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <h2 className="font-instrument italic text-2xl text-slate-950">
+                  My Projects &amp; Case Studies
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Portfolio projects attributed to you. You can add new projects and edit your existing projects.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  to="/dashboard/my-projects?action=new"
+                  className="bg-black text-white rounded-full px-4 py-1.5 text-xs font-semibold flex items-center gap-1.5 hover:bg-slate-800 transition-colors shadow-sm"
+                >
+                  <Plus size={13} />
+                  <span>Add Project</span>
+                </Link>
+                <Link
+                  to="/dashboard/my-projects"
+                  className="liquid-glass text-slate-700 rounded-full px-4 py-1.5 text-xs font-semibold flex items-center gap-1.5 border border-black/10 hover:bg-slate-50 transition-colors"
+                >
+                  <span>Manage All</span>
+                  <ArrowRight size={13} />
+                </Link>
+              </div>
+            </div>
+
+            {projects.length === 0 ? (
+              <div className="text-center py-12 border border-dashed border-black/10 rounded-2xl bg-slate-50/50">
+                <FolderGit2 size={34} className="mx-auto text-slate-300 mb-3" />
+                <p className="text-sm font-semibold text-slate-700">No projects added yet</p>
+                <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto mb-4">
+                  Showcase your engineering capabilities! Publish your apps, APIs, websites, or case studies.
+                </p>
+                <Link
+                  to="/dashboard/my-projects?action=new"
+                  className="inline-flex items-center gap-1.5 bg-black text-white rounded-full px-5 py-2 text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
+                >
+                  <Plus size={13} /> Add First Project
+                </Link>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {projects.map((proj) => (
+                  <div key={proj.id} className="liquid-glass rounded-2xl p-4 border border-black/[0.08] bg-white flex flex-col justify-between shadow-2xs hover:shadow-sm transition-shadow">
+                    <div>
+                      <div className="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                            {proj.category || 'Engineering'}
+                          </span>
+                          <h4 className="font-instrument italic text-lg text-slate-950 mt-1">
+                            {proj.name}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          {proj.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-600 line-clamp-2 mb-3">
+                        {proj.short_description || proj.description}
+                      </p>
+                      {proj.technologies && proj.technologies.length > 0 && (
+                        <div className="flex flex-wrap gap-1 mb-3">
+                          {proj.technologies.slice(0, 3).map((t) => (
+                            <span key={t.id || t.name} className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-50 text-slate-600 border border-black/[0.06]">
+                              {t.name}
+                            </span>
+                          ))}
+                          {proj.technologies.length > 3 && (
+                            <span className="text-[10px] font-mono text-slate-400">+{proj.technologies.length - 3}</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="pt-3 border-t border-black/[0.06] flex items-center justify-between gap-2">
+                      <Link
+                        to={`/projects/${proj.slug}`}
+                        className="text-xs text-slate-600 hover:text-black font-semibold flex items-center gap-1"
+                      >
+                        <span>View Project</span>
+                        <ExternalLink size={11} />
+                      </Link>
+                      <Link
+                        to="/dashboard/my-projects"
+                        className="px-3 py-1 rounded-full liquid-glass text-xs font-medium text-slate-700 hover:text-black border border-black/10 flex items-center gap-1 shadow-2xs"
+                      >
+                        <Edit3 size={11} />
+                        <span>Edit</span>
+                      </Link>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
       </div>
 

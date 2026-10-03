@@ -23,6 +23,8 @@ async def list_developers(
         .join(DeveloperProfile.user)
         .where(
             User.is_active == True,
+            User.status == "approved",
+            User.is_verified == True,
             DeveloperProfile.is_public == True
         )
         .options(

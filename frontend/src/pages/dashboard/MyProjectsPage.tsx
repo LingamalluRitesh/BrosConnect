@@ -271,7 +271,7 @@ export const MyProjectsPage: React.FC = () => {
             </p>
           </div>
 
-          {user && (user.is_verified || user.role === 'super_admin') && (
+          {user && (user.role === 'developer' || user.role === 'super_admin') && (
             <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-black text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-slate-800 transition-colors self-start sm:self-auto shrink-0 shadow-sm"
@@ -294,9 +294,9 @@ export const MyProjectsPage: React.FC = () => {
             <FolderGit2 size={48} className="mx-auto text-slate-300 mb-4" />
             <h3 className="font-instrument italic text-3xl text-slate-950 mb-2">No Projects Published Yet</h3>
             <p className="text-slate-600 text-sm max-w-sm mx-auto mb-8">
-              Your database is completely clean! You can now create and publish your first verified project with full attribution.
+              Your database is completely clean! You can now create and publish your first project with full attribution.
             </p>
-            {user && (user.is_verified || user.role === 'super_admin') ? (
+            {user && (user.role === 'developer' || user.role === 'super_admin') ? (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-black text-white rounded-full px-7 py-3 text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm"
@@ -305,39 +305,55 @@ export const MyProjectsPage: React.FC = () => {
               </button>
             ) : (
               <p className="text-xs text-slate-500 font-mono">
-                Contact your platform administrator or get verified to publish projects.
+                Log in as an authorized developer to publish projects.
               </p>
             )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {projects.map((proj) => (
-              <div key={proj.id} className="space-y-3">
-                <ProjectCard project={proj} />
-                {/* Modification Action Bar */}
-                <div className="liquid-glass rounded-2xl p-3 px-5 flex items-center justify-between gap-3 border border-black/[0.08] shadow-2xs bg-white/70">
-                  <span className="text-xs text-slate-500 font-mono">
-                    Status: <span className="text-slate-900 font-semibold">{proj.status}</span>
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => openEditModal(proj)}
-                      className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-700 hover:text-black hover:bg-slate-50 border border-black/10 transition-colors flex items-center gap-1.5 shadow-2xs"
-                    >
-                      <Edit3 size={12} />
-                      <span>Modify</span>
-                    </button>
-                    <button
-                      onClick={() => handleDeleteProject(proj)}
-                      className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 shadow-2xs"
-                    >
-                      <Trash2 size={12} />
-                      <span>Delete</span>
-                    </button>
+            {projects.map((proj) => {
+              const canEdit = user && (
+                user.role === 'super_admin' ||
+                proj.developer_associations?.some((assoc: any) =>
+                  assoc.developer?.user_id === user.id ||
+                  assoc.developer?.user?.username === user.username
+                )
+              );
+
+              return (
+                <div key={proj.id} className="space-y-3">
+                  <ProjectCard project={proj} />
+                  {/* Modification Action Bar */}
+                  <div className="liquid-glass rounded-2xl p-3 px-5 flex items-center justify-between gap-3 border border-black/[0.08] shadow-2xs bg-white/70">
+                    <span className="text-xs text-slate-500 font-mono">
+                      Status: <span className="text-slate-900 font-semibold">{proj.status}</span>
+                    </span>
+                    {canEdit ? (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => openEditModal(proj)}
+                          className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-700 hover:text-black hover:bg-slate-50 border border-black/10 transition-colors flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Edit3 size={12} />
+                          <span>Modify</span>
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProject(proj)}
+                          className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-rose-600 hover:text-rose-700 hover:bg-rose-50 border border-rose-200 transition-colors flex items-center gap-1.5 shadow-2xs"
+                        >
+                          <Trash2 size={12} />
+                          <span>Delete</span>
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-[11px] text-slate-400 font-mono italic">
+                        Attributed Contributor
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

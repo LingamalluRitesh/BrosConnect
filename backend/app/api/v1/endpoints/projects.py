@@ -99,11 +99,11 @@ async def create_project(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Only verified developers or CEO (super_admin) can create projects
-    if current_user.role != "super_admin" and not current_user.is_verified:
+    # Allow active developers or CEO (super_admin) to create projects
+    if current_user.role not in ["super_admin", "developer"] or not current_user.is_active:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only verified developers or the CEO can create projects."
+            detail="Only developers or the CEO can create projects."
         )
 
     try:
@@ -220,10 +220,10 @@ async def create_project(
                 db.add(assoc)
                 attributed_dev_ids.add(current_dev.id)
 
-        if not has_verified_dev:
+        if not has_verified_dev and current_user.role not in ["developer", "super_admin"]:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Business Rule: Every project must have at least one verified developer associated with it before publication."
+                detail="Business Rule: Every project must have at least one developer associated with it."
             )
 
         await db.commit()
@@ -277,7 +277,7 @@ async def update_project(
         for assoc in project.developer_associations
     )
     if not (is_admin or is_contributor):
-        raise HTTPException(status_code=403, detail="Not authorized to edit this project")
+        raise HTTPException(status_code=403, detail="Not authorized to edit this project. You can only edit your own projects.")
 
     if payload.name is not None:
         project.name = payload.name
@@ -349,7 +349,7 @@ async def delete_project(
         for assoc in project.developer_associations
     )
     if not (is_admin or is_contributor):
-        raise HTTPException(status_code=403, detail="Not authorized to delete this project")
+        raise HTTPException(status_code=403, detail="Not authorized to delete this project. You can only delete your own projects.")
 
     await db.delete(project)
     await db.commit()
