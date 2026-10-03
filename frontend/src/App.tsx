@@ -1,6 +1,7 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
+import { SettingsProvider } from './context/SettingsContext';
 import { WebSocketProvider } from './context/WebSocketContext';
 import { Navbar } from './components/layout/Navbar';
 import { Footer } from './components/layout/Footer';
@@ -8,6 +9,7 @@ import { Footer } from './components/layout/Footer';
 // Public Pages
 import { HomePage } from './pages/public/HomePage';
 import { AboutPage } from './pages/public/AboutPage';
+import { TeamPage } from './pages/public/TeamPage';
 import { ServicesPage } from './pages/public/ServicesPage';
 import { DevelopersDirectory } from './pages/public/DevelopersDirectory';
 import { DeveloperProfilePage } from './pages/public/DeveloperProfilePage';
@@ -36,6 +38,7 @@ const AppShell: React.FC = () => {
           {/* Public Routes */}
           <Route path="/" element={<HomePage />} />
           <Route path="/about" element={<AboutPage />} />
+          <Route path="/team" element={<TeamPage />} />
           <Route path="/services" element={<ServicesPage />} />
           <Route path="/developers" element={<DevelopersDirectory />} />
           <Route path="/developers/:username" element={<DeveloperProfilePage />} />
@@ -47,15 +50,18 @@ const AppShell: React.FC = () => {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
 
-          {/* Dashboard & Workspace Routes */}
+          {/* Workspace & Portal Routes */}
           <Route path="/dashboard" element={<DeveloperDashboard />} />
+          <Route path="/developer/dashboard" element={<DeveloperDashboard />} />
+          <Route path="/client/dashboard" element={<DeveloperDashboard />} />
           <Route path="/dashboard/my-projects" element={<MyProjectsPage />} />
           <Route path="/dashboard/inquiries" element={<InquiriesPage />} />
           <Route path="/community" element={<CommunityChatPage />} />
           <Route path="/messages" element={<DirectMessagesPage />} />
 
-          {/* Executive Administration */}
-          <Route path="/admin" element={<AdminDashboard />} />
+          {/* CEO Command Suite */}
+          <Route path="/ceo" element={<AdminDashboard />} />
+          <Route path="/admin" element={<Navigate to="/ceo" replace />} />
 
           {/* Fallback */}
           <Route path="*" element={<HomePage />} />
@@ -70,9 +76,11 @@ export const App: React.FC = () => {
   return (
     <Router>
       <AuthProvider>
-        <WebSocketProvider>
-          <AppShell />
-        </WebSocketProvider>
+        <SettingsProvider>
+          <WebSocketProvider>
+            <AppShell />
+          </WebSocketProvider>
+        </SettingsProvider>
       </AuthProvider>
     </Router>
   );

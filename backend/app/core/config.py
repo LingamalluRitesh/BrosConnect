@@ -8,8 +8,8 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent.parent
 ENV_PATH = BACKEND_DIR / ".env"
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = "DevConnect"
-    PROJECT_DESCRIPTION: str = "Developer Community & Digital Services Platform"
+    PROJECT_NAME: str = "RMVS Web Services"
+    PROJECT_DESCRIPTION: str = "Enterprise Web Services, Architecture & Engineering Solutions"
     VERSION: str = "1.0.0"
     API_V1_STR: str = "/api/v1"
     
@@ -32,10 +32,6 @@ class Settings(BaseSettings):
     SUPER_ADMIN_NAME: str = "Ritesh Lingamallu"
     SUPER_ADMIN_USERNAME: str = "riteshlingamallu8"
     SUPER_ADMIN_EMAIL: str = "riteshlingamallu8@gmail.com"
-    
-    MD_NAME: str = "M. Shiva Gopi"
-    MD_USERNAME: str = "m-shiva-gopi"
-    MD_EMAIL: str = "shiva@devconnect.io"
 
     class Config:
         case_sensitive = True

@@ -1,6 +1,10 @@
 import re
 import uuid
 import logging
+import subprocess
+import os
+from pathlib import Path
+from urllib.parse import quote
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -95,11 +99,11 @@ async def create_project(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Only verified developers, admin, managing_director, or super_admin can create projects
-    if current_user.role not in ["super_admin", "managing_director", "admin"] and not current_user.is_verified:
+    # Only verified developers or CEO (super_admin) can create projects
+    if current_user.role != "super_admin" and not current_user.is_verified:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only verified developers or platform administrators can create projects."
+            detail="Only verified developers or the CEO can create projects."
         )
 
     try:
@@ -170,7 +174,7 @@ async def create_project(
                 )
                 dev_profile = (await db.execute(dev_stmt)).scalar_one_or_none()
                 if dev_profile:
-                    if dev_profile.user and (dev_profile.user.is_verified or dev_profile.user.role in ["super_admin", "managing_director", "admin"]):
+                    if dev_profile.user and (dev_profile.user.is_verified or dev_profile.user.role == "super_admin"):
                         has_verified_dev = True
                     assoc = ProjectDeveloper(
                         project_id=new_project.id,
@@ -189,23 +193,23 @@ async def create_project(
                 .options(selectinload(DeveloperProfile.user))
             )
             current_dev = (await db.execute(dev_stmt)).scalar_one_or_none()
-            if not current_dev and current_user.role in ["super_admin", "managing_director", "admin"]:
-                # Ensure admin has developer profile
+            if not current_dev and current_user.role == "super_admin":
+                # Ensure CEO has developer profile
                 current_dev = DeveloperProfile(
                     user_id=current_user.id,
-                    title="Platform Administrator",
-                    short_bio="Platform Administrator & Lead Developer at Bro's Connect.",
-                    bio="Full-stack engineering and platform systems at Bro's Connect.",
+                    title="Chief Executive Officer",
+                    short_bio="Super Admin & Lead Systems Architect.",
+                    bio="Full-stack engineering and platform architecture.",
                     location="India",
                     availability="Available for Projects",
-                    years_experience=3,
+                    years_experience=5,
                     is_public=True
                 )
                 db.add(current_dev)
                 await db.flush()
 
             if current_dev and current_dev.id not in attributed_dev_ids:
-                if current_user.is_verified or current_user.role in ["super_admin", "managing_director", "admin"]:
+                if current_user.is_verified or current_user.role == "super_admin":
                     has_verified_dev = True
                 assoc = ProjectDeveloper(
                     project_id=new_project.id,
@@ -266,8 +270,8 @@ async def update_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    # Check permission: admin or associated developer
-    is_admin = current_user.role in ["super_admin", "managing_director", "admin"]
+    # Check permission: CEO (super_admin) or associated developer
+    is_admin = current_user.role == "super_admin"
     is_contributor = any(
         assoc.developer and assoc.developer.user_id == current_user.id
         for assoc in project.developer_associations
@@ -339,7 +343,7 @@ async def delete_project(
     if not project:
         raise HTTPException(status_code=404, detail="Project not found")
 
-    is_admin = current_user.role in ["super_admin", "managing_director", "admin"]
+    is_admin = current_user.role == "super_admin"
     is_contributor = any(
         assoc.developer and assoc.developer.user_id == current_user.id
         for assoc in project.developer_associations
@@ -350,4 +354,112 @@ async def delete_project(
     await db.delete(project)
     await db.commit()
     return {"message": "Project deleted successfully", "id": project_id}
+
+@router.put("/{project_id}/cover-image")
+async def update_cover_image(
+    project_id: int,
+    payload: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(Project)
+        .where(Project.id == project_id)
+        .options(selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer))
+    )
+    project = (await db.execute(stmt)).scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    is_admin = current_user.role == "super_admin"
+    is_contributor = any(
+        assoc.developer and assoc.developer.user_id == current_user.id
+        for assoc in project.developer_associations
+    )
+    if not (is_admin or is_contributor):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this project")
+
+    image_url = payload.get("image_url")
+    if not image_url:
+        raise HTTPException(status_code=400, detail="image_url is required")
+
+    project.image_url = image_url
+    await db.commit()
+    return {"status": "success", "image_url": project.image_url}
+
+@router.post("/{project_id}/capture-screenshot")
+async def capture_project_screenshot(
+    project_id: int,
+    payload: dict,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    stmt = (
+        select(Project)
+        .where(Project.id == project_id)
+        .options(selectinload(Project.developer_associations).selectinload(ProjectDeveloper.developer))
+    )
+    project = (await db.execute(stmt)).scalar_one_or_none()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+
+    is_admin = current_user.role == "super_admin"
+    is_contributor = any(
+        assoc.developer and assoc.developer.user_id == current_user.id
+        for assoc in project.developer_associations
+    )
+    if not (is_admin or is_contributor):
+        raise HTTPException(status_code=403, detail="Not authorized to edit this project")
+
+    target_url = payload.get("url") or project.demo_url
+    if not target_url:
+        raise HTTPException(status_code=400, detail="Target website URL is required")
+
+    # Destination directory in frontend/public/projects
+    base_dir = Path(__file__).resolve().parents[5]
+    public_proj_dir = base_dir / "frontend" / "public" / "projects"
+    public_proj_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"project-{project.id}-landing.png"
+    filepath = public_proj_dir / filename
+    rel_url = f"/projects/{filename}"
+
+    # Try headless Chrome/Edge
+    chrome_paths = [
+        r"C:\Program Files\Google\Chrome\Application\chrome.exe",
+        r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
+    ]
+    browser_exe = next((p for p in chrome_paths if os.path.exists(p)), None)
+
+    captured = False
+    if browser_exe:
+        try:
+            cmd = [
+                browser_exe,
+                "--headless=new",
+                "--disable-gpu",
+                f"--screenshot={str(filepath)}",
+                "--window-size=1280,800",
+                target_url
+            ]
+            process = subprocess.run(cmd, capture_output=True, timeout=20)
+            if filepath.exists() and filepath.stat().st_size > 1000:
+                captured = True
+        except Exception as e:
+            logger.warning("Headless browser capture failed: %s", e)
+
+    if not captured:
+        # Fallback to high quality remote screenshot API
+        rel_url = f"https://api.microlink.io?url={quote(target_url, safe='')}&screenshot=true&meta=false&embed=screenshot.url"
+
+    project.image_url = rel_url
+    await db.commit()
+
+    return {
+        "status": "success",
+        "image_url": rel_url,
+        "captured_locally": captured,
+        "detail": f"Landing page captured from {target_url}"
+    }
+
 

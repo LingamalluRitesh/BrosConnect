@@ -139,7 +139,7 @@ async def update_inquiry_status(
     is_authorized = (
         current_user.id == inquiry.client_id or
         current_user.id == inquiry.developer.user_id or
-        current_user.role in ["super_admin", "managing_director", "admin"]
+        current_user.role == "super_admin"
     )
     if not is_authorized:
         raise HTTPException(status_code=403, detail="Not authorized to update this inquiry")

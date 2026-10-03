@@ -49,7 +49,7 @@ export const DeveloperCard: React.FC<DeveloperCardProps> = ({ developer, onConta
           </h3>
         </Link>
         <p className="text-slate-400 text-xs mt-0.5 mb-2 font-mono">@{user.username}</p>
-        <p className="text-slate-600 text-sm font-medium mb-3">{developer.title || 'Senior Software Architect'}</p>
+        <p className="text-slate-600 text-sm font-medium mb-3">{developer.title || 'Senior Software Engineer'}</p>
 
         {developer.short_bio && (
           <p className="text-slate-500 text-xs line-clamp-2 mb-4 leading-relaxed">{developer.short_bio}</p>

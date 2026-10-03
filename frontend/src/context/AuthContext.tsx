@@ -15,11 +15,13 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('devconnect_token'));
+  const [token, setToken] = useState<string | null>(
+    localStorage.getItem('rmvs_token') || localStorage.getItem('devconnect_token')
+  );
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const refreshUser = async () => {
-    const savedToken = localStorage.getItem('devconnect_token');
+    const savedToken = localStorage.getItem('rmvs_token') || localStorage.getItem('devconnect_token');
     if (!savedToken) {
       setUser(null);
       setIsLoading(false);
@@ -30,6 +32,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(res.data);
     } catch (err) {
       console.error('Error loading current user', err);
+      localStorage.removeItem('rmvs_token');
       localStorage.removeItem('devconnect_token');
       setToken(null);
       setUser(null);
@@ -43,12 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (newToken: string, newUser: User) => {
-    localStorage.setItem('devconnect_token', newToken);
+    localStorage.setItem('rmvs_token', newToken);
     setToken(newToken);
     setUser(newUser);
   };
 
   const logout = () => {
+    localStorage.removeItem('rmvs_token');
     localStorage.removeItem('devconnect_token');
     setToken(null);
     setUser(null);

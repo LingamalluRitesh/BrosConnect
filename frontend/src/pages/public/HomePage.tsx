@@ -10,6 +10,7 @@ import api from '../../api/client';
 import type { Project, DeveloperProfile } from '../../types';
 import { ProjectCard } from '../../components/projects/ProjectCard';
 import { DeveloperCard } from '../../components/developers/DeveloperCard';
+import { useSettings } from '../../context/SettingsContext';
 
 /* ─────────────────────────────────────────
    Reusable FadeIn wrapper
@@ -35,6 +36,11 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: 
 };
 
 export const HomePage: React.FC = () => {
+  const { settings } = useSettings();
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
+  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
+
   const [projects, setProjects] = useState<Project[]>([]);
   const [developers, setDevelopers] = useState<DeveloperProfile[]>([]);
   const [selectedPillar, setSelectedPillar] = useState('All');
@@ -96,6 +102,7 @@ export const HomePage: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.1 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass text-slate-700 text-xs font-mono tracking-widest uppercase mb-8 border border-black/[0.08] shadow-sm"
           >
+            <img src={logoUrl} alt={companyName} className="w-4 h-4 rounded-full object-cover" />
             <span>Websites</span>
             <span className="text-slate-300">•</span>
             <span>Apps</span>
@@ -114,7 +121,7 @@ export const HomePage: React.FC = () => {
           >
             Engineering <em>Digital Legacies.</em>
             <br />
-            <span className="italic font-normal">Build. Connect. Then Grow.</span>
+            <span className="italic font-normal">{tagline}</span>
           </motion.h1>
 
           {/* Subtitle with clean max-width */}
@@ -124,7 +131,7 @@ export const HomePage: React.FC = () => {
             transition={{ duration: 0.9, delay: 0.3 }}
             className="max-w-2xl mx-auto text-slate-600 text-sm sm:text-base md:text-lg leading-relaxed mb-10"
           >
-            Bro's Connect bridges visionary enterprises with India's premier verified software engineers.
+            {companyName} bridges visionary enterprises with India's premier verified software engineers.
             Zero middleman markup, direct collaboration, and transparent creator attribution for every line of code.
           </motion.p>
 
@@ -149,7 +156,7 @@ export const HomePage: React.FC = () => {
             </Link>
           </motion.div>
 
-          {/* ── Floating Architectural Command & Filter Toolbar (Light Glass) ── */}
+          {/* ── Floating Command & Filter Toolbar (Light Glass) ── */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -192,7 +199,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ─────────────────────────────────────────
-          2. THE 4 PILLARS OF BRO'S CONNECT (From Official Logo)
+          2. THE 4 PILLARS OF RMVS WEB SERVICES (From Official Logo)
       ───────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
         <FadeIn>
@@ -284,7 +291,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ─────────────────────────────────────────
-          3. ARCHITECTURAL SHOWCASE SECTION (Connected to Live DB)
+          3. PROJECTS SHOWCASE SECTION (Connected to Live DB)
       ───────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
         <FadeIn>
@@ -361,7 +368,7 @@ export const HomePage: React.FC = () => {
               </h2>
             </div>
             <span className="text-slate-500 text-xs font-mono hidden sm:block">
-              Bro's Connect Headquarters · Hyderabad
+              {companyName} Headquarters · Hyderabad
             </span>
           </div>
 
@@ -393,11 +400,11 @@ export const HomePage: React.FC = () => {
                 </p>
 
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6">
-                  Leads Bro's Connect's core technology standards, distributed system architecture, and AI-driven automation workflows. Oversees platform verification and developer quality assurance.
+                  Leads {companyName}'s core technology standards, distributed systems engineering, and AI-driven automation workflows. Oversees platform verification and developer quality assurance.
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 mb-6">
-                  {['FastAPI', 'Python', 'React', 'TypeScript', 'AI/ML', 'System Architecture'].map((tech) => (
+                  {['FastAPI', 'Python', 'React', 'TypeScript', 'AI/ML', 'System Design'].map((tech) => (
                     <span key={tech} className="px-2.5 py-1 rounded-full text-[10px] font-mono liquid-glass text-slate-700 border border-black/10">
                       {tech}
                     </span>
@@ -413,37 +420,37 @@ export const HomePage: React.FC = () => {
               </div>
             </div>
 
-            {/* MD Card */}
+            {/* Core Engineering Squad Card */}
             <div className="liquid-glass rounded-3xl p-8 sm:p-10 flex flex-col justify-between border border-black/[0.08] hover:border-black/20 shadow-sm hover:shadow-md transition-all">
               <div>
                 <div className="flex items-start justify-between gap-4 mb-6">
                   <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-black/10 flex items-center justify-center font-instrument italic text-slate-900 text-2xl shadow-inner shrink-0">
-                      M
+                    <div className="w-16 h-16 rounded-2xl bg-black text-white flex items-center justify-center font-instrument italic text-2xl shadow-inner shrink-0">
+                      <Code2 size={28} />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-instrument italic text-2xl text-slate-900">M. Shiva Gopi</h3>
+                        <h3 className="font-instrument italic text-2xl text-slate-900">Engineering Squad</h3>
                         <CheckCircle2 size={16} className="text-slate-700" />
                       </div>
                       <p className="text-slate-500 text-xs tracking-widest uppercase font-mono mt-0.5">
-                        Managing Director
+                        Verified Core Developers
                       </p>
-                      <p className="text-slate-400 text-[11px] font-mono mt-0.5">Platform Operations · Cloud Delivery</p>
+                      <p className="text-slate-400 text-[11px] font-mono mt-0.5">Full Stack · Cloud · Distributed Systems</p>
                     </div>
                   </div>
                 </div>
 
                 <p className="font-instrument italic text-xl text-slate-900 leading-relaxed mb-6">
-                  "Talent is everywhere. Recognition shouldn't be reserved for the few."
+                  "Production-grade code crafted with full transparency and verified attribution."
                 </p>
 
                 <p className="text-slate-600 text-xs sm:text-sm leading-relaxed mb-6">
-                  Directs enterprise client relationships, cross-functional delivery squads, and cloud container infrastructure. Ensures every project milestone complies with enterprise SLAs.
+                  Our core software engineers build enterprise solutions, cloud APIs, and responsive web platforms. Each project includes transparent creator attribution and direct client collaboration.
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 mb-6">
-                  {['Kubernetes', 'Docker', 'AWS', 'Enterprise SaaS', 'DevOps', 'Operations'].map((tech) => (
+                  {['React', 'TypeScript', 'FastAPI', 'PostgreSQL', 'Docker', 'REST APIs'].map((tech) => (
                     <span key={tech} className="px-2.5 py-1 rounded-full text-[10px] font-mono liquid-glass text-slate-700 border border-black/10">
                       {tech}
                     </span>
@@ -452,10 +459,10 @@ export const HomePage: React.FC = () => {
               </div>
 
               <div className="pt-4 border-t border-black/[0.08] flex items-center justify-between">
-                <Link to="/about" className="text-xs font-semibold text-slate-700 hover:text-black transition-colors flex items-center gap-1.5">
-                  <span>Executive Details</span> <ArrowRight size={12} />
+                <Link to="/team" className="text-xs font-semibold text-slate-700 hover:text-black transition-colors flex items-center gap-1.5">
+                  <span>Meet The Team</span> <ArrowRight size={12} />
                 </Link>
-                <span className="text-[10px] font-mono text-slate-400">Verified Executive ID #02</span>
+                <span className="text-[10px] font-mono text-slate-400">Verified Technical Squad</span>
               </div>
             </div>
           </div>
@@ -463,7 +470,7 @@ export const HomePage: React.FC = () => {
       </section>
 
       {/* ─────────────────────────────────────────
-          5. VERIFIED ARCHITECTS ROSTER
+          5. VERIFIED DEVELOPERS ROSTER
       ───────────────────────────────────────── */}
       <section className="py-20 px-4 sm:px-6 max-w-6xl mx-auto">
         <FadeIn>
@@ -537,7 +544,7 @@ export const HomePage: React.FC = () => {
                   Have a project in mind? Let's engineer it.
                 </h3>
                 <p className="text-slate-600 text-sm leading-relaxed mb-6">
-                  Connect directly with Bro's Connect leadership and verified developers. Tell us your goals, select your target discipline, and receive a transparent project blueprint in Indian Rupees (₹).
+                  Connect directly with {companyName} leadership and verified developers. Tell us your goals, select your target discipline, and receive a transparent project blueprint in Indian Rupees (₹).
                 </p>
                 <div className="space-y-3">
                   {[

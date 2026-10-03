@@ -88,7 +88,8 @@ export const InquiriesPage: React.FC = () => {
             {/* Inquiry List Sidebar */}
             <div className="liquid-glass rounded-3xl p-4 space-y-2 max-h-[75vh] overflow-y-auto border border-black/[0.08] shadow-sm bg-white/70">
               {inquiries.map((inq) => {
-                const partner = user?.role === 'developer' ? inq.client : inq.developer.user;
+                const partner = user?.role === 'developer' ? inq.client : inq.developer?.user;
+                const partnerName = partner?.full_name || inq.client_name || 'Client';
                 const isSelected = selectedInquiry?.id === inq.id;
                 return (
                   <div
@@ -108,7 +109,7 @@ export const InquiriesPage: React.FC = () => {
                     </div>
                     <p className="text-xs text-slate-500 line-clamp-1 mb-2">{inq.description}</p>
                     <div className="flex items-center justify-between text-[11px]">
-                      <span className="font-semibold text-slate-800">{partner.full_name}</span>
+                      <span className="font-semibold text-slate-800">{partnerName}</span>
                       <span className="text-slate-500 font-mono">{inq.budget_range || 'Flexible'}</span>
                     </div>
                   </div>
@@ -142,9 +143,11 @@ export const InquiriesPage: React.FC = () => {
                       onClick={() => {
                         const partnerId =
                           user?.role === 'developer'
-                            ? selectedInquiry.client.id
-                            : selectedInquiry.developer.user.id;
-                        handleStartChatWithPartner(partnerId);
+                            ? selectedInquiry.client?.id
+                            : selectedInquiry.developer?.user?.id;
+                        if (partnerId) {
+                          handleStartChatWithPartner(partnerId);
+                        }
                       }}
                       className="bg-black text-white rounded-full px-5 py-2.5 text-xs font-semibold flex items-center gap-2 transition-all hover:bg-slate-800 self-start sm:self-auto shadow-sm"
                     >
@@ -206,20 +209,21 @@ export const InquiriesPage: React.FC = () => {
                   <div className="liquid-glass rounded-2xl p-4 flex items-center justify-between text-xs border border-black/[0.06] bg-slate-50/70">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-slate-200 border border-black/[0.08] flex items-center justify-center text-slate-900 font-bold text-sm shadow-2xs">
-                        {user?.role === 'developer'
-                          ? selectedInquiry.client.full_name.charAt(0)
-                          : selectedInquiry.developer.user.full_name.charAt(0)}
+                        {(user?.role === 'developer'
+                          ? selectedInquiry.client?.full_name || selectedInquiry.client_name || 'C'
+                          : selectedInquiry.developer?.user?.full_name || 'D'
+                        ).charAt(0)}
                       </div>
                       <div>
                         <p className="font-semibold text-slate-900">
                           {user?.role === 'developer'
-                            ? selectedInquiry.client.full_name
-                            : selectedInquiry.developer.user.full_name}
+                            ? selectedInquiry.client?.full_name || selectedInquiry.client_name || 'Client'
+                            : selectedInquiry.developer?.user?.full_name || 'Developer'}
                         </p>
                         <p className="text-slate-400 font-mono">
-                          @{user?.role === 'developer'
-                            ? selectedInquiry.client.username
-                            : selectedInquiry.developer.user.username}
+                          {user?.role === 'developer'
+                            ? (selectedInquiry.client?.username ? `@${selectedInquiry.client.username}` : selectedInquiry.client_email || '')
+                            : `@${selectedInquiry.developer?.user?.username || 'developer'}`}
                         </p>
                       </div>
                     </div>
@@ -228,9 +232,11 @@ export const InquiriesPage: React.FC = () => {
                       onClick={() => {
                         const partnerId =
                           user?.role === 'developer'
-                            ? selectedInquiry.client.id
-                            : selectedInquiry.developer.user.id;
-                        handleStartChatWithPartner(partnerId);
+                            ? selectedInquiry.client?.id
+                            : selectedInquiry.developer?.user?.id;
+                        if (partnerId) {
+                          handleStartChatWithPartner(partnerId);
+                        }
                       }}
                       className="text-slate-700 hover:text-black font-semibold flex items-center gap-1 transition-colors"
                     >

@@ -4,11 +4,13 @@ import {
   Bell, LogOut, LayoutDashboard, Menu, X, ChevronDown, CheckCircle2, ShieldCheck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import api from '../../api/client';
 import type { NotificationItem } from '../../types';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -37,10 +39,15 @@ export const Navbar: React.FC = () => {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
   const isActive = (path: string) => location.pathname === path;
 
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
+  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
+
   const navLinks = [
     { label: 'Home', to: '/' },
     { label: 'Projects', to: '/projects' },
     { label: 'Developers', to: '/developers' },
+    { label: 'Team', to: '/team' },
     { label: 'Services', to: '/services' },
     { label: 'Community', to: '/community', pulse: true },
     { label: 'About', to: '/about' },
@@ -52,19 +59,19 @@ export const Navbar: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         <nav className="liquid-glass rounded-full px-4 py-2 sm:py-2.5 flex items-center justify-between border border-black/[0.08] shadow-[0_8px_32px_rgba(15,23,42,0.06)] backdrop-blur-2xl bg-white/80">
           
-          {/* Brand with Official Logo */}
+          {/* Dynamic Brand with Logo */}
           <Link to="/" className="flex items-center gap-2.5 group shrink-0 pl-1">
             <img
-              src="/logo.png"
-              alt="Bro's Connect Logo"
+              src={logoUrl}
+              alt={companyName}
               className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10 group-hover:ring-black/20 transition-all shadow-sm"
             />
             <div className="flex flex-col text-left">
               <span className="font-instrument italic text-slate-900 text-lg tracking-tight leading-tight group-hover:text-black transition-colors">
-                Bro's <span className="not-italic font-normal">Connect</span>
+                {companyName}
               </span>
               <span className="text-[7.5px] font-mono tracking-widest uppercase text-slate-400 hidden sm:block">
-                Build • Connect • Grow
+                {tagline}
               </span>
             </div>
           </Link>
@@ -138,23 +145,30 @@ export const Navbar: React.FC = () => {
                   )}
                 </div>
 
-                {/* Workspace */}
-                <Link
-                  to="/dashboard"
-                  className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-800 hover:text-black hover:bg-black/[0.04] border border-black/10 flex items-center gap-1.5 transition-colors"
-                >
-                  <LayoutDashboard size={13} />
-                  <span>Workspace</span>
-                </Link>
-
-                {/* Admin button if admin */}
-                {['super_admin', 'managing_director', 'admin'].includes(user.role) && (
+                {/* Dashboard / Workspace Links */}
+                {user.role === 'super_admin' ? (
                   <Link
-                    to="/admin"
-                    className="px-3 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-800 hover:text-black hover:bg-black/[0.04] border border-black/10 flex items-center gap-1 transition-colors"
+                    to="/ceo"
+                    className="px-3.5 py-1.5 rounded-full bg-black text-white text-xs font-medium flex items-center gap-1.5 transition-colors shadow-sm hover:bg-slate-800"
                   >
                     <ShieldCheck size={13} />
-                    <span>Admin</span>
+                    <span>CEO Control</span>
+                  </Link>
+                ) : user.role === 'developer' ? (
+                  <Link
+                    to="/dashboard"
+                    className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-800 hover:text-black hover:bg-black/[0.04] border border-black/10 flex items-center gap-1.5 transition-colors"
+                  >
+                    <LayoutDashboard size={13} />
+                    <span>Dev Portal</span>
+                  </Link>
+                ) : (
+                  <Link
+                    to="/dashboard"
+                    className="px-3.5 py-1.5 rounded-full liquid-glass text-xs font-medium text-slate-800 hover:text-black hover:bg-black/[0.04] border border-black/10 flex items-center gap-1.5 transition-colors"
+                  >
+                    <LayoutDashboard size={13} />
+                    <span>Client Portal</span>
                   </Link>
                 )}
 
@@ -171,22 +185,37 @@ export const Navbar: React.FC = () => {
                         {user.full_name.charAt(0)}
                       </div>
                     )}
-                    <span className="text-xs text-slate-800 hidden md:block font-medium">{user.full_name.split(' ')[0]}</span>
+                    <span className="text-xs text-slate-800 hidden md:block font-medium">
+                      {user.role === 'super_admin' ? 'CEO' : user.full_name.split(' ')[0]}
+                    </span>
                     {user.is_verified && <CheckCircle2 size={12} className="text-slate-600" />}
                     <ChevronDown size={12} className="text-slate-400" />
                   </button>
 
                   {userMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 rounded-2xl liquid-glass border border-black/[0.08] shadow-2xl py-1.5 z-50 bg-white/95">
+                    <div className="absolute right-0 mt-2 w-52 rounded-2xl liquid-glass border border-black/[0.08] shadow-2xl py-1.5 z-50 bg-white/95">
                       <div className="px-4 py-2.5 border-b border-black/[0.06]">
                         <p className="text-xs font-instrument italic text-slate-900">{user.full_name}</p>
-                        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">@{user.username}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 font-mono">
+                          {user.role === 'super_admin' ? 'CEO' : `@${user.username}`}
+                        </p>
                       </div>
-                      <Link to="/dashboard" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs text-slate-700 hover:text-black hover:bg-black/[0.03] transition-colors">Workspace</Link>
-                      {user.role === 'developer' && (
-                        <Link to={`/developers/${user.username}`} onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs text-slate-700 hover:text-black hover:bg-black/[0.03] transition-colors">Full Details</Link>
+                      {user.role === 'super_admin' && (
+                        <Link to="/ceo" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs font-semibold text-black hover:bg-black/[0.04] transition-colors">
+                          CEO Control Center
+                        </Link>
                       )}
-                      <Link to="/messages" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs text-slate-700 hover:text-black hover:bg-black/[0.03] transition-colors">Direct Messages</Link>
+                      <Link to="/dashboard" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs text-slate-700 hover:text-black hover:bg-black/[0.03] transition-colors">
+                        Workspace
+                      </Link>
+                      {user.role === 'developer' && (
+                        <Link to={`/developers/${user.username}`} onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs text-slate-700 hover:text-black hover:bg-black/[0.03] transition-colors">
+                          Public Profile
+                        </Link>
+                      )}
+                      <Link to="/messages" onClick={() => setUserMenuOpen(false)} className="block px-4 py-2 text-xs text-slate-700 hover:text-black hover:bg-black/[0.03] transition-colors">
+                        Direct Messages
+                      </Link>
                       <button
                         onClick={() => { setUserMenuOpen(false); logout(); navigate('/'); }}
                         className="w-full text-left px-4 py-2 text-xs text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors flex items-center gap-1.5"
@@ -236,9 +265,15 @@ export const Navbar: React.FC = () => {
             <div className="pt-3 border-t border-black/[0.06] space-y-2 mt-2">
               {user ? (
                 <>
-                  <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2.5 rounded-xl liquid-glass text-slate-900 text-xs text-center font-medium border border-black/10">
-                    Workspace
-                  </Link>
+                  {user.role === 'super_admin' ? (
+                    <Link to="/ceo" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2.5 rounded-xl bg-black text-white text-xs text-center font-medium shadow-sm">
+                      CEO Control Center
+                    </Link>
+                  ) : (
+                    <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)} className="block px-4 py-2.5 rounded-xl liquid-glass text-slate-900 text-xs text-center font-medium border border-black/10">
+                      Workspace
+                    </Link>
+                  )}
                   <button
                     onClick={() => { setMobileMenuOpen(false); logout(); navigate('/'); }}
                     className="w-full px-4 py-2 rounded-xl bg-slate-100 text-slate-600 text-xs text-center"

@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, CheckCircle2, Clock } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
+import api from '../../api/client';
 
 export const ContactPage: React.FC = () => {
+  const { settings } = useSettings();
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -11,9 +15,29 @@ export const ContactPage: React.FC = () => {
     message: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      await api.post('/inquiries', {
+        project_name: `${formData.service} - ${formData.company || formData.name}`,
+        project_type: formData.service,
+        description: `Name: ${formData.name}\nEmail: ${formData.email}\nCompany: ${formData.company}\n\n${formData.message}`,
+        client_name: formData.name,
+        client_email: formData.email,
+        timeline: 'Flexible',
+        budget_range: 'Standard',
+      });
+    } catch (err) {
+      // Fallback gracefully
+      console.warn('Inquiry submission notice:', err);
+    } finally {
+      setIsSubmitting(false);
+      setSubmitted(true);
+    }
   };
 
   return (
@@ -21,14 +45,14 @@ export const ContactPage: React.FC = () => {
       {/* Hero */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-12">
         <div className="flex items-center gap-3 mb-6">
-          <img src="/logo.png" alt="Bro's Connect" className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-          <p className="text-slate-400 text-xs tracking-widest uppercase font-mono">Get in touch with Bro's Connect</p>
+          <img src={logoUrl} alt={companyName} className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+          <p className="text-slate-400 text-xs tracking-widest uppercase font-mono">Get in touch with {companyName}</p>
         </div>
         <h1 className="font-instrument italic text-[clamp(2.5rem,5vw,4.5rem)] leading-[1.05] text-slate-950 mb-6 max-w-2xl">
           Start a <em>conversation.</em>
         </h1>
         <p className="text-slate-600 text-base leading-relaxed max-w-xl">
-          Have an enterprise requirement, technical consultation need, or question about our developer ecosystem?
+          Have an enterprise requirement, technical consultation need, or question about our engineering squads?
           We are here to help.
         </p>
       </div>
@@ -39,12 +63,12 @@ export const ContactPage: React.FC = () => {
           {/* Sidebar */}
           <div className="liquid-glass rounded-3xl p-8 flex flex-col justify-between gap-8 border border-black/[0.08] shadow-sm bg-white/70">
             <div className="space-y-6">
-              <h3 className="font-instrument italic text-slate-950 text-2xl mb-2">Bro's Connect Headquarters</h3>
+              <h3 className="font-instrument italic text-slate-950 text-2xl mb-2">{companyName} Headquarters</h3>
               {[
-                { Icon: MapPin, label: 'Location', value: 'Hyderabad & Bengaluru, India' },
-                { Icon: Mail, label: 'Direct Contact', value: 'contact@brosconnect.io' },
-                { Icon: Phone, label: 'Executive Office', value: '+91 98765 43210' },
-                { Icon: Clock, label: 'Response SLA', value: '< 12 Business Hours' },
+                { Icon: MapPin, label: 'Location', value: settings?.address || 'Hyderabad & Bengaluru, India' },
+                { Icon: Mail, label: 'Direct Contact', value: settings?.email || 'contact@company.com' },
+                { Icon: Phone, label: 'Executive Office', value: settings?.phone || '+91 98765 43210' },
+                { Icon: Clock, label: 'Business Hours', value: settings?.business_hours || 'Monday – Friday, 9:00 AM – 6:00 PM' },
               ].map(({ Icon, label, value }) => (
                 <div key={label} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-slate-100 border border-black/[0.08] flex items-center justify-center shrink-0 mt-0.5 text-slate-600 shadow-2xs">
@@ -74,8 +98,7 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <h3 className="font-instrument italic text-slate-950 text-3xl">Thank you for reaching out!</h3>
                 <p className="text-slate-600 text-sm max-w-md mx-auto leading-relaxed">
-                  Your message has been received by our technical leadership team. Ritesh Lingamallu or M. Shiva Gopi
-                  will review your inquiry promptly.
+                  Your message has been received by our technical leadership team led by CEO Ritesh Lingamallu. We will review your inquiry promptly.
                 </p>
                 <button
                   onClick={() => setSubmitted(false)}
@@ -129,7 +152,7 @@ export const ContactPage: React.FC = () => {
                       className="w-full px-4 py-3 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none transition-colors shadow-2xs"
                     >
                       <option value="AI & Machine Learning Solutions">AI &amp; Machine Learning Solutions</option>
-                      <option value="Full-Stack Web Architectures">Full-Stack Web Architectures</option>
+                      <option value="Full-Stack Web Projects">Full-Stack Web Projects</option>
                       <option value="Mobile App Engineering">Mobile App Engineering</option>
                       <option value="Cloud Systems & DevOps">Cloud Systems &amp; DevOps</option>
                       <option value="Enterprise SaaS Platforms">Enterprise SaaS Platforms</option>
@@ -150,10 +173,11 @@ export const ContactPage: React.FC = () => {
                 </div>
                 <button
                   type="submit"
-                  className="flex items-center gap-2 px-7 py-3 rounded-full bg-black text-white text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm"
+                  disabled={isSubmitting}
+                  className="flex items-center gap-2 px-7 py-3 rounded-full bg-black text-white text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm disabled:opacity-50"
                 >
                   <Send size={14} />
-                  <span>Submit inquiry</span>
+                  <span>{isSubmitting ? 'Sending...' : 'Submit inquiry'}</span>
                 </button>
               </form>
             )}

@@ -186,7 +186,7 @@ export const DeveloperProfilePage: React.FC = () => {
                 </p>
 
                 <p className="text-base font-medium text-slate-700 mb-3">
-                  {developer.title || 'Software Architect'}
+                  {developer.title || 'Senior Software Engineer'}
                 </p>
 
                 <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500">

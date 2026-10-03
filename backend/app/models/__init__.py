@@ -28,7 +28,7 @@ class User(Base):
     full_name = Column(String(255), nullable=False)
     phone = Column(String(50), nullable=True)
     hashed_password = Column(String(255), nullable=False)
-    role = Column(String(50), default="developer", nullable=False) # super_admin, managing_director, admin, developer, client
+    role = Column(String(50), default="developer", nullable=False) # super_admin (CEO), developer, client
     status = Column(String(50), default="approved", nullable=False) # pending, approved, rejected, suspended
     is_active = Column(Boolean, default=True, nullable=False)
     is_verified = Column(Boolean, default=False, nullable=False)
@@ -42,6 +42,7 @@ class User(Base):
     messages = relationship("Message", back_populates="sender")
     community_messages = relationship("CommunityMessage", back_populates="user")
     inquiries_made = relationship("ClientInquiry", back_populates="client", foreign_keys="ClientInquiry.client_id")
+    activity_logs = relationship("ActivityLog", back_populates="user", cascade="all, delete-orphan")
 
 class Skill(Base):
     __tablename__ = "skills"
@@ -55,7 +56,8 @@ class DeveloperProfile(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False)
-    title = Column(String(255), nullable=True)
+    title = Column(String(255), default="Full Stack Developer", nullable=False) # Dynamic Designation (CEO, CTO, Lead Developer, etc.)
+    department = Column(String(100), default="Engineering", nullable=False) # Department
     short_bio = Column(String(500), nullable=True)
     bio = Column(Text, nullable=True)
     location = Column(String(255), nullable=True)
@@ -65,6 +67,9 @@ class DeveloperProfile(Base):
     linkedin_url = Column(String(255), nullable=True)
     portfolio_url = Column(String(255), nullable=True)
     resume_url = Column(String(255), nullable=True)
+    cover_image_url = Column(String(500), nullable=True)
+    certificates = Column(Text, nullable=True) # JSON or newline text
+    achievements = Column(Text, nullable=True) # JSON or newline text
     is_public = Column(Boolean, default=True, nullable=False)
     views_count = Column(Integer, default=0, nullable=False)
 
@@ -102,7 +107,9 @@ class Project(Base):
     demo_url = Column(String(500), nullable=True)
     repo_url = Column(String(500), nullable=True)
     image_url = Column(String(500), nullable=True)
-    status = Column(String(50), default="Published", nullable=False) # Draft, Pending Review, Published, Rejected, Archived
+    gallery_urls = Column(Text, nullable=True)
+    status = Column(String(50), default="Live", nullable=False) # Idea, Planning, In Development, Testing, Live, Completed, Maintenance, Archived
+    visibility = Column(String(50), default="Public", nullable=False) # Public, Private
     client_name = Column(String(255), nullable=True)
     start_date = Column(String(50), nullable=True)
     completion_date = Column(String(50), nullable=True)
@@ -128,14 +135,20 @@ class ClientInquiry(Base):
     __tablename__ = "client_inquiries"
 
     id = Column(Integer, primary_key=True, index=True)
-    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    developer_id = Column(Integer, ForeignKey("developer_profiles.id", ondelete="CASCADE"), nullable=False)
+    client_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=True) # Optional for public inquiry submissions
+    developer_id = Column(Integer, ForeignKey("developer_profiles.id", ondelete="SET NULL"), nullable=True)
+    name = Column(String(255), nullable=True)
+    company = Column(String(255), nullable=True)
+    email = Column(String(255), nullable=True)
+    phone = Column(String(100), nullable=True)
     project_name = Column(String(255), nullable=False)
     project_type = Column(String(100), nullable=True)
+    requirements = Column(Text, nullable=True)
     budget_range = Column(String(100), nullable=True)
     timeline = Column(String(100), nullable=True)
+    preferred_developer = Column(String(255), nullable=True)
     description = Column(Text, nullable=False)
-    status = Column(String(50), default="New", nullable=False) # New, Contacted, In Discussion, Proposal, In Progress, Completed, Closed
+    status = Column(String(50), default="New", nullable=False) # New, Contacted, Discussion, Proposal, In Progress, Completed, Closed
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     client = relationship("User", foreign_keys=[client_id], back_populates="inquiries_made", lazy="selectin")
@@ -211,3 +224,41 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     user = relationship("User", back_populates="notifications")
+
+class CompanySettings(Base):
+    __tablename__ = "company_settings"
+
+    id = Column(Integer, primary_key=True, index=True)
+    company_name = Column(String(255), default="Company Name Not Configured", nullable=False)
+    logo_url = Column(String(500), nullable=True)
+    favicon_url = Column(String(500), nullable=True)
+    tagline = Column(String(255), nullable=True)
+    description = Column(Text, nullable=True)
+    primary_color = Column(String(50), default="#000000", nullable=False)
+    secondary_color = Column(String(50), default="#ffffff", nullable=False)
+    email = Column(String(255), nullable=True)
+    phone = Column(String(100), nullable=True)
+    whatsapp = Column(String(100), nullable=True)
+    website = Column(String(255), nullable=True)
+    instagram_url = Column(String(255), nullable=True)
+    linkedin_url = Column(String(255), nullable=True)
+    github_url = Column(String(255), nullable=True)
+    youtube_url = Column(String(255), nullable=True)
+    address = Column(Text, nullable=True)
+    business_hours = Column(String(255), nullable=True)
+    footer_copyright = Column(String(255), nullable=True)
+    updated_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False)
+
+class ActivityLog(Base):
+    __tablename__ = "activity_logs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
+    action = Column(String(100), nullable=False) # LOGIN, LOGOUT, DEVELOPER_CREATED, DESIGNATION_CHANGED, etc.
+    entity_type = Column(String(100), nullable=True) # developer, project, client, settings, etc.
+    entity_id = Column(Integer, nullable=True)
+    details = Column(Text, nullable=True)
+    ip_address = Column(String(100), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
+
+    user = relationship("User", back_populates="activity_logs", lazy="selectin")

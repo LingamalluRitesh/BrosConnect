@@ -11,6 +11,11 @@ interface ProjectCardProps {
 export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
   const [isHovered, setIsHovered] = useState(false);
 
+  const fallbackUrl = project.demo_url
+    ? `https://image.thum.io/get/width/1200/crop/800/${project.demo_url}`
+    : 'https://images.unsplash.com/photo-1509391365360-2e959784a276?w=1200&q=80';
+  const [imgSrc, setImgSrc] = useState(project.image_url || fallbackUrl);
+
   const leadAssoc = project.developer_associations?.find((d) => d.is_lead) || project.developer_associations?.[0];
   const leadDev = leadAssoc?.developer;
   const leadUser = leadDev?.user;
@@ -25,8 +30,15 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
       {/* Background image with cinematic overlay */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <img
-          src={project.image_url || 'https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&q=80'}
+          src={imgSrc}
           alt={project.name}
+          onError={() => {
+            if (imgSrc !== fallbackUrl) {
+              setImgSrc(fallbackUrl);
+            } else {
+              setImgSrc('https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=1200&q=80');
+            }
+          }}
           className={`w-full h-full object-cover transition-transform duration-700 ease-out ${isHovered ? 'scale-105 brightness-[0.7]' : 'scale-100 brightness-[0.85]'}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />

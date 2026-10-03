@@ -7,7 +7,6 @@ from app.models import User, DeveloperProfile, ClientProfile, Skill, Notificatio
 from app.schemas import (
     RegisterDeveloperRequest,
     RegisterClientRequest,
-    RegisterAdminRequest,
     LoginRequest,
     Token,
     UserOut
@@ -92,7 +91,7 @@ async def register_developer(payload: RegisterDeveloperRequest, db: AsyncSession
     user_notif = Notification(
         user_id=new_user.id,
         title="Application Received",
-        message="Welcome to DevConnect! Your developer application has been submitted and is currently pending review by our leadership team.",
+        message="Welcome to RMVS Web Services! Your developer application has been submitted and is currently pending review by our leadership team.",
         type="approval",
         link="/dashboard"
     )

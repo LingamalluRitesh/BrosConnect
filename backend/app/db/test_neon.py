@@ -32,7 +32,7 @@ async def test_connection():
         # Run seed
         print("Verifying initial seed state...", flush=True)
         await seed_data()
-        print("[OK] Database ready for Bro's Connect!", flush=True)
+        print("[OK] Database ready for RMVS Web Services!", flush=True)
 
     except Exception as e:
         print(f"\n[ERROR] Connection Error: {e}", file=sys.stderr, flush=True)

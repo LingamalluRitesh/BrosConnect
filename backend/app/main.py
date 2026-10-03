@@ -9,13 +9,13 @@ from app.db.seed import seed_data
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: ensure tables and seed initial platform state
-    print("DevConnect Backend starting up... checking database & seeds.")
+    print("RMVS Web Services Backend starting up... checking database & seeds.")
     try:
         await seed_data()
     except Exception as e:
         print(f"Seed notice: {e}")
     yield
-    print("DevConnect Backend shutting down.")
+    print("RMVS Web Services Backend shutting down.")
 
 app = FastAPI(
     title=settings.PROJECT_NAME,
@@ -44,8 +44,7 @@ async def health_check():
         "service": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "leadership": {
-            "ceo": settings.SUPER_ADMIN_NAME,
-            "managing_director": settings.MD_NAME
+            "ceo": settings.SUPER_ADMIN_NAME
         }
     }
 

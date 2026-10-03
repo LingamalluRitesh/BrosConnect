@@ -5,12 +5,17 @@ import {
 } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import { useWebSocket } from '../../context/WebSocketContext';
 import type { CommunityChannel, CommunityMessage } from '../../types';
 
 export const CommunityChatPage: React.FC = () => {
   const { user } = useAuth();
+  const { settings } = useSettings();
   const { isConnected, subscribe, unsubscribe, sendChannelMessage, addListener } = useWebSocket();
+
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
 
   const [channels, setChannels] = useState<CommunityChannel[]>([]);
   const [activeChannel, setActiveChannel] = useState<CommunityChannel | null>(null);
@@ -123,10 +128,10 @@ export const CommunityChatPage: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Page header */}
         <div className="mb-5 flex items-center gap-3">
-          <img src="/logo.png" alt="Bro's Connect" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+          <img src={logoUrl} alt={companyName} className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
           <div>
-            <h1 className="font-instrument italic text-2xl text-slate-950 leading-none">Bro's Connect Community</h1>
-            <p className="text-xs text-slate-400 tracking-widest uppercase font-mono mt-0.5">Developer &amp; Architect Channels</p>
+            <h1 className="font-instrument italic text-2xl text-slate-950 leading-none">{companyName} Community</h1>
+            <p className="text-xs text-slate-400 tracking-widest uppercase font-mono mt-0.5">Engineering &amp; Developer Channels</p>
           </div>
         </div>
 
@@ -234,9 +239,9 @@ export const CommunityChatPage: React.FC = () => {
                           {msg.user.is_verified && (
                             <CheckCircle2 size={11} className="text-emerald-600 shrink-0" />
                           )}
-                          {['super_admin', 'managing_director'].includes(msg.user.role) && (
+                          {msg.user.role === 'super_admin' && (
                             <span className="px-1.5 py-0.5 rounded-md text-[9px] font-mono border border-black/10 text-slate-700 bg-slate-100">
-                              {msg.user.role === 'super_admin' ? 'CEO' : 'MD'}
+                              CEO
                             </span>
                           )}
                           <span className="text-[10px] text-slate-400 font-mono">

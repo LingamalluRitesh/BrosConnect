@@ -13,7 +13,8 @@ export interface UserBrief {
   id: number;
   username: string;
   full_name: string;
-  role: 'super_admin' | 'managing_director' | 'admin' | 'developer' | 'client';
+  email?: string;
+  role: 'super_admin' | 'developer' | 'client';
   avatar_url?: string;
   is_verified: boolean;
 }
@@ -21,9 +22,11 @@ export interface UserBrief {
 export interface DeveloperProfileBrief {
   id: number;
   title?: string;
+  department?: string;
   location?: string;
   availability: string;
   years_experience: number;
+  cover_image_url?: string;
   user: UserBrief;
   skills: Skill[];
 }
@@ -32,6 +35,7 @@ export interface DeveloperProfile {
   id: number;
   user_id: number;
   title?: string;
+  department?: string;
   short_bio?: string;
   bio?: string;
   location?: string;
@@ -41,6 +45,9 @@ export interface DeveloperProfile {
   linkedin_url?: string;
   portfolio_url?: string;
   resume_url?: string;
+  cover_image_url?: string;
+  certificates?: any[];
+  achievements?: any[];
   is_public: boolean;
   views_count: number;
   user: UserBrief;
@@ -83,7 +90,9 @@ export interface Project {
   demo_url?: string;
   repo_url?: string;
   image_url?: string;
+  gallery_urls?: string[];
   status: string;
+  visibility: string;
   client_name?: string;
   start_date?: string;
   completion_date?: string;
@@ -94,8 +103,12 @@ export interface Project {
 
 export interface ClientInquiry {
   id: number;
-  client_id: number;
-  developer_id: number;
+  client_id?: number;
+  developer_id?: number;
+  client_name?: string;
+  client_email?: string;
+  client_phone?: string;
+  preferred_developer_id?: number;
   project_name: string;
   project_type?: string;
   budget_range?: string;
@@ -103,8 +116,8 @@ export interface ClientInquiry {
   description: string;
   status: 'New' | 'Contacted' | 'In Discussion' | 'Proposal' | 'In Progress' | 'Completed' | 'Closed';
   created_at: string;
-  client: UserBrief;
-  developer: DeveloperProfileBrief;
+  client?: UserBrief;
+  developer?: DeveloperProfileBrief;
 }
 
 export interface CommunityChannel {
@@ -155,10 +168,53 @@ export interface NotificationItem {
 
 export interface DashboardStats {
   total_developers: number;
+  active_developers?: number;
   verified_developers: number;
   pending_applications: number;
   total_projects: number;
+  completed_projects?: number;
   total_clients: number;
   total_inquiries: number;
+  open_inquiries?: number;
   active_channels: number;
+  total_views?: number;
+  project_views?: number;
+  developer_views?: number;
+  recent_activity?: any[];
+}
+
+export interface CompanySettings {
+  id: number;
+  company_name: string;
+  logo_url?: string;
+  favicon_url?: string;
+  tagline?: string;
+  description?: string;
+  primary_color: string;
+  secondary_color: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+  website?: string;
+  github_url?: string;
+  linkedin_url?: string;
+  twitter_url?: string;
+  youtube_url?: string;
+  address?: string;
+  business_hours?: string;
+  footer_copyright?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ActivityLog {
+  id: number;
+  user_id?: number;
+  action: string;
+  entity_type?: string;
+  entity_id?: number;
+  details?: Record<string, any>;
+  ip_address?: string;
+  created_at: string;
+  user?: UserBrief;
 }

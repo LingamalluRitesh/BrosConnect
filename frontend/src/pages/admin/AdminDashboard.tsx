@@ -1,1162 +1,1139 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ShieldCheck, CheckCircle2, RefreshCw, UserCheck, Users,
+  ShieldCheck, CheckCircle2, RefreshCw, Users,
   FolderGit2, MessageSquare, Edit3, Trash2, ExternalLink, X, Plus,
-  Camera, AlertCircle, Mail, Phone, MapPin
+  AlertCircle, Settings as SettingsIcon,
+  Activity, Key, UserPlus, Clock, Check
 } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
-import type { DashboardStats, DeveloperProfile, ClientInquiry, User, Project } from '../../types';
+import { useSettings } from '../../context/SettingsContext';
+import type { DashboardStats, ClientInquiry, User, Project, CompanySettings, ActivityLog } from '../../types';
 
 export const AdminDashboard: React.FC = () => {
-  const { user: currentUser, refreshUser } = useAuth();
+  const { user: currentUser } = useAuth();
+  const { settings, updateSettings, refreshSettings } = useSettings();
+
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
-  const [pendingDevs, setPendingDevs] = useState<DeveloperProfile[]>([]);
+  const [developers, setDevelopers] = useState<any[]>([]);
   const [allProjects, setAllProjects] = useState<Project[]>([]);
   const [inquiries, setInquiries] = useState<ClientInquiry[]>([]);
-  const [activeTab, setActiveTab] = useState<'members' | 'pending' | 'projects' | 'inquiries'>('members');
+  const [activityLogs, setActivityLogs] = useState<ActivityLog[]>([]);
+
+  const [activeTab, setActiveTab] = useState<'overview' | 'team' | 'projects' | 'clients' | 'inquiries' | 'brand' | 'activity'>('overview');
   const [actionSuccess, setActionSuccess] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Search & filter for members
-  const [searchQuery, setSearchQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState<string>('all');
-
-  // Edit Person Modal state
-  const [editingUser, setEditingUser] = useState<User | null>(null);
-  const [isSaving, setIsSaving] = useState(false);
-  const [editFormData, setEditFormData] = useState({
+  // Add Developer Modal
+  const [isAddDevOpen, setIsAddDevOpen] = useState(false);
+  const [newDevForm, setNewDevForm] = useState({
+    email: '',
+    username: '',
     full_name: '',
+    password: '',
+    title: 'Senior Software Engineer',
+    department: 'Core Engineering',
     phone: '',
-    avatar_url: '',
-    role: 'developer',
-    status: 'approved',
-    is_verified: true,
-    is_active: true,
-    title: '',
-    short_bio: '',
+    location: 'Hyderabad, India',
+    years_experience: 3,
+    skills: 'Python, FastAPI, React, TypeScript',
     bio: '',
+  });
+
+  // Edit Developer Modal
+  const [editingDev, setEditingDev] = useState<any | null>(null);
+  const [editDevForm, setEditDevForm] = useState({
+    title: '',
+    department: '',
+    status: 'approved',
+    is_active: true,
+    full_name: '',
+    bio: '',
+    skills: '',
     location: '',
-    availability: 'Available for Projects',
     years_experience: 1,
-    skills: [] as string[],
     github_url: '',
     linkedin_url: '',
     portfolio_url: '',
-    resume_url: '',
-    company_name: '',
-    website: '',
-    industry: '',
   });
-  const [newSkillInput, setNewSkillInput] = useState('');
+
+  // Reset Password Modal
+  const [resetPwUser, setResetPwUser] = useState<any | null>(null);
+  const [newPassword, setNewPassword] = useState('');
+
+  // Brand Settings Form state
+  const [brandForm, setBrandForm] = useState<Partial<CompanySettings>>({});
 
   useEffect(() => {
-    loadAdminData();
-  }, []);
+    if (currentUser?.role === 'super_admin') {
+      loadAdminData();
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    if (settings) {
+      setBrandForm({
+        company_name: settings.company_name || '',
+        logo_url: settings.logo_url || '',
+        favicon_url: settings.favicon_url || '',
+        tagline: settings.tagline || '',
+        description: settings.description || '',
+        primary_color: settings.primary_color || '#0066FF',
+        secondary_color: settings.secondary_color || '#00F2FE',
+        email: settings.email || '',
+        phone: settings.phone || '',
+        whatsapp: settings.whatsapp || '',
+        website: settings.website || '',
+        github_url: settings.github_url || '',
+        linkedin_url: settings.linkedin_url || '',
+        twitter_url: settings.twitter_url || '',
+        youtube_url: settings.youtube_url || '',
+        address: settings.address || '',
+        business_hours: settings.business_hours || '',
+        footer_copyright: settings.footer_copyright || '',
+      });
+    }
+  }, [settings]);
 
   const loadAdminData = async () => {
+    setIsLoading(true);
     try {
-      const [statsRes, usersRes, pendingRes, projRes, inqRes] = await Promise.all([
+      const [statsRes, devRes, usersRes, projRes, inqRes, actRes] = await Promise.all([
         api.get('/admin/stats'),
+        api.get('/admin/developers'),
         api.get('/admin/users'),
-        api.get('/admin/pending-developers'),
         api.get('/admin/projects'),
         api.get('/admin/inquiries'),
+        api.get('/activity'),
       ]);
       setStats(statsRes.data);
+      setDevelopers(devRes.data);
       setAllUsers(usersRes.data);
-      setPendingDevs(pendingRes.data);
       setAllProjects(projRes.data);
       setInquiries(inqRes.data);
+      setActivityLogs(actRes.data);
     } catch (e) {
       console.error('Error loading admin data', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const openEditModal = (targetUser: User) => {
-    setEditingUser(targetUser);
-    const devP = targetUser.developer_profile;
-    const clientP = targetUser.client_profile;
-    setEditFormData({
-      full_name: targetUser.full_name || '',
-      phone: targetUser.phone || '',
-      avatar_url: targetUser.avatar_url || '',
-      role: targetUser.role || 'developer',
-      status: targetUser.status || 'approved',
-      is_verified: targetUser.is_verified ?? true,
-      is_active: targetUser.is_active ?? true,
-      title: devP?.title || '',
-      short_bio: devP?.short_bio || '',
-      bio: devP?.bio || '',
-      location: devP?.location || '',
-      availability: devP?.availability || 'Available for Projects',
-      years_experience: devP?.years_experience || 1,
-      skills: devP?.skills ? devP.skills.map((s) => s.name) : [],
-      github_url: devP?.github_url || '',
-      linkedin_url: devP?.linkedin_url || '',
-      portfolio_url: devP?.portfolio_url || '',
-      resume_url: devP?.resume_url || '',
-      company_name: clientP?.company_name || '',
-      website: clientP?.website || '',
-      industry: clientP?.industry || '',
-    });
-    setNewSkillInput('');
-    setActionError(null);
-  };
-
-  const handleAddSkill = () => {
-    const clean = newSkillInput.trim();
-    if (clean && !editFormData.skills.includes(clean)) {
-      setEditFormData({ ...editFormData, skills: [...editFormData.skills, clean] });
-      setNewSkillInput('');
+  const showNotification = (msg: string, isError = false) => {
+    if (isError) {
+      setActionError(msg);
+      setTimeout(() => setActionError(null), 4000);
+    } else {
+      setActionSuccess(msg);
+      setTimeout(() => setActionSuccess(null), 4000);
     }
   };
 
-  const handleRemoveSkill = (skillToRemove: string) => {
-    setEditFormData({
-      ...editFormData,
-      skills: editFormData.skills.filter((s) => s !== skillToRemove),
-    });
-  };
-
-  const handleSaveUser = async (e: React.FormEvent) => {
+  // 1. Create Developer
+  const handleCreateDeveloper = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingUser) return;
-    setIsSaving(true);
-    setActionError(null);
     try {
-      await api.put(`/admin/users/${editingUser.id}`, {
-        ...editFormData,
-        years_experience: Number(editFormData.years_experience),
+      const skillsArray = newDevForm.skills
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+
+      await api.post('/admin/developers', {
+        ...newDevForm,
+        skills: skillsArray,
+      });
+      showNotification(`Developer ${newDevForm.full_name} created successfully!`);
+      setIsAddDevOpen(false);
+      setNewDevForm({
+        email: '',
+        username: '',
+        full_name: '',
+        password: '',
+        title: 'Senior Software Engineer',
+        department: 'Core Engineering',
+        phone: '',
+        location: 'Hyderabad, India',
+        years_experience: 3,
+        skills: 'Python, FastAPI, React, TypeScript',
+        bio: '',
+      });
+      loadAdminData();
+    } catch (err: any) {
+      showNotification(err.response?.data?.detail || 'Failed to create developer', true);
+    }
+  };
+
+  // 2. Open Edit Developer
+  const openEditDeveloper = (dev: any) => {
+    setEditingDev(dev);
+    const p = dev.developer_profile;
+    setEditDevForm({
+      title: p?.title || '',
+      department: p?.department || 'Core Engineering',
+      status: dev.status || 'approved',
+      is_active: dev.is_active ?? true,
+      full_name: dev.full_name || '',
+      bio: p?.bio || p?.short_bio || '',
+      skills: (p?.skills || []).map((s: any) => s.name).join(', '),
+      location: p?.location || '',
+      years_experience: p?.years_experience || 1,
+      github_url: p?.github_url || '',
+      linkedin_url: p?.linkedin_url || '',
+      portfolio_url: p?.portfolio_url || '',
+    });
+  };
+
+  // 3. Save Edit Developer
+  const handleSaveDeveloper = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingDev) return;
+    try {
+      await api.put(`/admin/developers/${editingDev.id}/designation`, {
+        title: editDevForm.title,
+        department: editDevForm.department,
       });
 
-      setActionSuccess(`Updated details for ${editFormData.full_name || editingUser.username} successfully!`);
-      setTimeout(() => setActionSuccess(null), 4000);
-      setEditingUser(null);
-      await loadAdminData();
-
-      // If updating the currently signed-in user, refresh the global AuthContext
-      if (currentUser && currentUser.id === editingUser.id) {
-        await refreshUser();
+      if (editDevForm.status !== editingDev.status) {
+        await api.put(`/admin/developers/${editingDev.id}/status`, {
+          status: editDevForm.status,
+          is_active: editDevForm.is_active,
+        });
       }
-    } catch (err: any) {
-      console.error('Error updating user', err);
-      setActionError(err.response?.data?.detail || 'Failed to update user. Please verify inputs.');
-    } finally {
-      setIsSaving(false);
-    }
-  };
 
-  const handleDeleteUser = async (userId: number, name: string) => {
-    if (!window.confirm(`Are you sure you want to delete user "${name}"? This action cannot be undone.`)) {
-      return;
-    }
-    try {
-      await api.delete(`/admin/users/${userId}`);
-      setActionSuccess(`User "${name}" has been deleted.`);
-      setTimeout(() => setActionSuccess(null), 3000);
+      showNotification(`Developer ${editingDev.full_name} updated successfully!`);
+      setEditingDev(null);
       loadAdminData();
     } catch (err: any) {
-      console.error('Error deleting user', err);
-      alert(err.response?.data?.detail || 'Could not delete user.');
+      showNotification(err.response?.data?.detail || 'Failed to update developer', true);
     }
   };
 
-  const handleApplicationAction = async (devProfileId: number, action: 'approve' | 'reject') => {
+  // 4. Delete Developer
+  const handleDeleteDeveloper = async (devId: number, name: string) => {
+    if (!window.confirm(`Are you sure you want to completely remove developer ${name}?`)) return;
     try {
-      await api.post(`/admin/developers/${devProfileId}/action`, { action });
-      setActionSuccess(`Developer application ${action}d successfully!`);
-      setTimeout(() => setActionSuccess(null), 3000);
+      await api.delete(`/admin/developers/${devId}`);
+      showNotification(`Developer ${name} deleted.`);
       loadAdminData();
-    } catch (e) {
-      console.error(`Error performing ${action}`, e);
+    } catch (err: any) {
+      showNotification(err.response?.data?.detail || 'Failed to delete developer', true);
     }
   };
 
-  if (!currentUser || !['super_admin', 'managing_director', 'admin'].includes(currentUser.role)) {
+  // 5. Reset Password
+  const handleResetPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetPwUser || !newPassword) return;
+    try {
+      await api.post(`/admin/users/${resetPwUser.id}/reset-password`, {
+        new_password: newPassword,
+      });
+      showNotification(`Password for ${resetPwUser.full_name} reset successfully!`);
+      setResetPwUser(null);
+      setNewPassword('');
+    } catch (err: any) {
+      showNotification(err.response?.data?.detail || 'Failed to reset password', true);
+    }
+  };
+
+  // 6. Update Inquiry Status
+  const handleInquiryStatus = async (inqId: number, status: string) => {
+    try {
+      await api.put(`/inquiries/${inqId}/status`, { status });
+      showNotification(`Inquiry updated to ${status}`);
+      loadAdminData();
+    } catch (err: any) {
+      showNotification('Failed to update inquiry status', true);
+    }
+  };
+
+  // 7. Save Brand Settings
+  const handleSaveBrandSettings = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await updateSettings(brandForm);
+      showNotification('Company branding and settings saved successfully!');
+      refreshSettings();
+    } catch (err: any) {
+      showNotification('Failed to save settings', true);
+    }
+  };
+
+  // Access Control: Strict CEO (super_admin) check
+  if (!currentUser || currentUser.role !== 'super_admin') {
     return (
       <div className="min-h-screen bg-white text-slate-900 flex items-center justify-center px-6">
         <div className="liquid-glass rounded-3xl p-10 text-center max-w-md w-full border border-black/[0.08] shadow-sm bg-white/70">
           <ShieldCheck size={48} className="mx-auto text-slate-400 mb-4" />
-          <h2 className="font-instrument italic text-2xl text-slate-950 mb-2">Restricted Administration</h2>
-          <p className="text-slate-600 text-sm leading-relaxed">
-            This portal is reserved for CEO Ritesh Lingamallu, MD M. Shiva Gopi, and appointed administrators.
+          <h2 className="font-instrument italic text-2xl text-slate-950 mb-2">Restricted Access</h2>
+          <p className="text-slate-600 text-sm leading-relaxed mb-6">
+            This Control Center is reserved exclusively for Chief Executive Officer Ritesh Lingamallu.
           </p>
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors"
+          >
+            <span>Sign in as CEO</span>
+          </Link>
         </div>
       </div>
     );
   }
 
-  // Filtered members list
-  const filteredUsers = allUsers.filter((u) => {
-    const matchesRole = roleFilter === 'all' || u.role === roleFilter;
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return matchesRole;
-    const matchesName = u.full_name?.toLowerCase().includes(q);
-    const matchesUser = u.username?.toLowerCase().includes(q);
-    const matchesEmail = u.email?.toLowerCase().includes(q);
-    const matchesTitle = u.developer_profile?.title?.toLowerCase().includes(q);
-    const matchesSkills = u.developer_profile?.skills?.some((s) => s.name.toLowerCase().includes(q));
-    return matchesRole && (matchesName || matchesUser || matchesEmail || matchesTitle || matchesSkills);
-  });
+  // Filter clients
+  const clientsList = allUsers.filter((u) => u.role === 'client');
 
   return (
     <div className="min-h-screen bg-white text-slate-900 pb-20">
-      <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8">
 
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Executive Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-black/[0.08]">
           <div>
             <div className="flex items-center gap-3 mb-2">
-              <img src="/logo.png" alt="Bro's Connect" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+              <img
+                src={settings?.logo_url || '/logo.png'}
+                alt="Logo"
+                className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm"
+              />
               <p className="text-slate-400 text-xs tracking-wider uppercase font-mono">
-                Bro's Connect Executive Control Center
+                {settings?.company_name || 'Company'} · Executive Control Center
               </p>
             </div>
-            <h1 className="font-instrument italic text-4xl text-slate-950">
-              Platform Administration
+            <h1 className="font-instrument italic text-3xl sm:text-4xl text-slate-950">
+              CEO Command Suite
             </h1>
-            <p className="text-slate-600 text-sm mt-1">
-              Operating as{' '}
-              <span className="text-slate-900 font-semibold">{currentUser.full_name}</span>{' '}
-              (
-              {currentUser.role === 'super_admin'
-                ? 'Chief Executive Officer'
-                : currentUser.role === 'managing_director'
-                ? 'Managing Director'
-                : 'Administrator'}
-              )
+            <p className="text-slate-600 text-xs sm:text-sm mt-1">
+              Logged in as <span className="text-slate-950 font-semibold">{currentUser.full_name}</span> (Chief Executive Officer)
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <button
-              onClick={() => openEditModal(currentUser)}
-              className="bg-black text-white hover:bg-slate-800 rounded-xl px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-            >
-              <Edit3 size={13} />
-              <span>Edit My Profile</span>
-            </button>
-
-            <button
               onClick={loadAdminData}
-              className="liquid-glass text-slate-700 hover:text-black rounded-xl px-4 py-2 text-xs font-semibold flex items-center gap-2 transition-all border border-black/10 hover:bg-slate-50 shadow-2xs"
+              disabled={isLoading}
+              className="p-2.5 rounded-full liquid-glass border border-black/10 text-slate-700 hover:text-black hover:bg-slate-50 transition-colors"
+              title="Refresh Data"
             >
-              <RefreshCw size={13} />
-              <span>Refresh</span>
+              <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+            </button>
+            <button
+              onClick={() => setIsAddDevOpen(true)}
+              className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
+            >
+              <UserPlus size={14} />
+              <span>Add Developer</span>
             </button>
           </div>
         </div>
 
-        {/* Success Banner */}
+        {/* Alerts */}
         {actionSuccess && (
-          <div className="liquid-glass rounded-2xl p-4 flex items-center gap-3 border border-emerald-200 bg-emerald-50/80 text-emerald-800 text-sm shadow-2xs">
+          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-center gap-2.5">
             <CheckCircle2 size={16} className="text-emerald-600 shrink-0" />
-            <span className="font-medium">{actionSuccess}</span>
+            <span>{actionSuccess}</span>
+          </div>
+        )}
+        {actionError && (
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 text-xs sm:text-sm flex items-center gap-2.5">
+            <AlertCircle size={16} className="text-rose-600 shrink-0" />
+            <span>{actionError}</span>
           </div>
         )}
 
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-            <div className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70">
-              <span className="text-slate-400 text-[10px] tracking-wider uppercase font-mono block mb-1">
-                Total Users
-              </span>
-              <span className="text-2xl font-bold text-slate-950 block">
-                {allUsers.length}
-              </span>
-            </div>
-
-            <div className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70">
-              <span className="text-slate-400 text-[10px] tracking-wider uppercase font-mono block mb-1">
-                Verified Devs
-              </span>
-              <span className="text-2xl font-bold text-slate-950 block">
-                {stats.verified_developers}
-              </span>
-            </div>
-
-            <div className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70">
-              <span className="text-slate-400 text-[10px] tracking-wider uppercase font-mono block mb-1">
-                Pending Apps
-              </span>
-              <span className="text-2xl font-bold text-slate-950 block">
-                {stats.pending_applications}
-              </span>
-            </div>
-
-            <div className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70">
-              <span className="text-slate-400 text-[10px] tracking-wider uppercase font-mono block mb-1">
-                Projects
-              </span>
-              <span className="text-2xl font-bold text-slate-950 block">
-                {stats.total_projects}
-              </span>
-            </div>
-
-            <div className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70">
-              <span className="text-slate-400 text-[10px] tracking-wider uppercase font-mono block mb-1">
-                Clients
-              </span>
-              <span className="text-2xl font-bold text-slate-950 block">
-                {stats.total_clients}
-              </span>
-            </div>
-
-            <div className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70">
-              <span className="text-slate-400 text-[10px] tracking-wider uppercase font-mono block mb-1">
-                Inquiries
-              </span>
-              <span className="text-2xl font-bold text-slate-950 block">
-                {stats.total_inquiries}
-              </span>
-            </div>
-          </div>
-        )}
-
-        {/* Tab Switcher */}
-        <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] pb-3">
-          <button
-            onClick={() => setActiveTab('members')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === 'members'
-                ? 'bg-black text-white shadow-xs'
-                : 'liquid-glass text-slate-600 hover:text-black border border-black/10 bg-slate-50/70'
-            }`}
-          >
-            <Users size={13} />
-            <span>Members & Profiles ({allUsers.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('pending')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === 'pending'
-                ? 'bg-black text-white shadow-xs'
-                : 'liquid-glass text-slate-600 hover:text-black border border-black/10 bg-slate-50/70'
-            }`}
-          >
-            <UserCheck size={13} />
-            <span>Approval Queue</span>
-            {pendingDevs.length > 0 && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-[10px] font-bold transition-all ${
-                  activeTab === 'pending'
-                    ? 'bg-white/20 text-white'
-                    : 'bg-amber-100 text-amber-800'
-                }`}
-              >
-                {pendingDevs.length}
-              </span>
-            )}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('projects')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === 'projects'
-                ? 'bg-black text-white shadow-xs'
-                : 'liquid-glass text-slate-600 hover:text-black border border-black/10 bg-slate-50/70'
-            }`}
-          >
-            <FolderGit2 size={13} />
-            <span>Published Projects ({allProjects.length})</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('inquiries')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-semibold transition-all ${
-              activeTab === 'inquiries'
-                ? 'bg-black text-white shadow-xs'
-                : 'liquid-glass text-slate-600 hover:text-black border border-black/10 bg-slate-50/70'
-            }`}
-          >
-            <MessageSquare size={13} />
-            <span>Inquiries ({inquiries.length})</span>
-          </button>
+        {/* Tab Navigation */}
+        <div className="flex flex-wrap items-center gap-2 border-b border-black/[0.06] pb-4">
+          {[
+            { id: 'overview', label: 'Overview & Analytics', icon: Activity },
+            { id: 'team', label: `Engineering Team (${developers.length})`, icon: Users },
+            { id: 'projects', label: `Projects (${allProjects.length})`, icon: FolderGit2 },
+            { id: 'clients', label: `Clients (${clientsList.length})`, icon: ShieldCheck },
+            { id: 'inquiries', label: `Inquiries (${inquiries.length})`, icon: MessageSquare },
+            { id: 'brand', label: 'Brand & Settings', icon: SettingsIcon },
+            { id: 'activity', label: 'Activity Logs', icon: Clock },
+          ].map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id as any)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium transition-all ${
+                activeTab === id
+                  ? 'bg-black text-white shadow-sm font-semibold'
+                  : 'liquid-glass text-slate-600 hover:text-black border border-black/10'
+              }`}
+            >
+              <Icon size={13} />
+              <span>{label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* ── Tab 1: Members & Profiles (Universal Edit) ── */}
-        {activeTab === 'members' && (
-          <div className="space-y-6">
-            {/* Search and Filters */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search member by name, username, skill, title, email..."
-                className="w-full sm:max-w-md bg-white border border-black/10 rounded-xl text-slate-900 text-xs px-4 py-2.5 placeholder-slate-400 focus:outline-none focus:border-black/30 shadow-2xs"
-              />
-
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-slate-400 text-xs font-mono">Role:</span>
-                {['all', 'developer', 'super_admin', 'client'].map((r) => (
-                  <button
-                    key={r}
-                    onClick={() => setRoleFilter(r)}
-                    className={`px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all ${
-                      roleFilter === r
-                        ? 'bg-black text-white'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {r === 'all' ? 'All' : r === 'super_admin' ? 'Admin' : r.charAt(0).toUpperCase() + r.slice(1)}
-                  </button>
-                ))}
-              </div>
+        {/* ── TAB 1: OVERVIEW & ANALYTICS ── */}
+        {activeTab === 'overview' && (
+          <div className="space-y-8">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+              {[
+                { label: 'Total Developers', val: stats?.total_developers ?? 0, icon: Users },
+                { label: 'Active Developers', val: stats?.active_developers ?? 0, icon: CheckCircle2 },
+                { label: 'Total Projects', val: stats?.total_projects ?? 0, icon: FolderGit2 },
+                { label: 'Completed Projects', val: stats?.completed_projects ?? 0, icon: Check },
+                { label: 'Total Clients', val: stats?.total_clients ?? 0, icon: ShieldCheck },
+                { label: 'Open Inquiries', val: stats?.open_inquiries ?? 0, icon: MessageSquare },
+              ].map(({ label, val, icon: Icon }) => (
+                <div key={label} className="liquid-glass rounded-2xl p-5 border border-black/[0.08] bg-white/70">
+                  <div className="flex items-center justify-between text-slate-400 mb-2">
+                    <Icon size={16} />
+                  </div>
+                  <div className="text-3xl font-instrument italic text-slate-950 font-bold">{val}</div>
+                  <div className="text-[11px] font-mono uppercase tracking-wider text-slate-500 mt-1">{label}</div>
+                </div>
+              ))}
             </div>
 
-            {/* Members Grid / Cards */}
-            {filteredUsers.length === 0 ? (
-              <div className="liquid-glass rounded-3xl p-16 text-center border border-black/[0.08] shadow-sm bg-white/70">
-                <Users size={36} className="mx-auto text-slate-300 mb-2" />
-                <h3 className="font-instrument italic text-xl text-slate-950 mb-1">No Members Match</h3>
-                <p className="text-slate-500 text-xs">Try clearing the search query or role filter.</p>
+            {/* Quick Summary Cards */}
+            <div className="grid md:grid-cols-2 gap-6">
+              <div className="liquid-glass rounded-3xl p-6 border border-black/[0.08] bg-white/70 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-instrument italic text-2xl text-slate-950">Company Hierarchy Status</h3>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">Operational</span>
+                </div>
+                <p className="text-slate-600 text-xs leading-relaxed">
+                  CEO Ritesh Lingamallu holds full administrative control over developers, projects, and platform configuration.
+                </p>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-2 border-b border-black/[0.04]">
+                    <span className="text-slate-500 font-mono">1. Chief Executive Officer:</span>
+                    <span className="font-semibold text-slate-900">Ritesh Lingamallu (Active)</span>
+                  </div>
+                  <div className="flex justify-between py-2 border-b border-black/[0.04]">
+                    <span className="text-slate-500 font-mono">2. Core Developers Count:</span>
+                    <span className="font-semibold text-slate-900">{developers.length} Developers</span>
+                  </div>
+                  <div className="flex justify-between py-2">
+                    <span className="text-slate-500 font-mono">3. Registered Clients:</span>
+                    <span className="font-semibold text-slate-900">{clientsList.length} Clients</span>
+                  </div>
+                </div>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {filteredUsers.map((u) => {
-                  const devP = u.developer_profile;
-                  const isCurrent = currentUser.id === u.id;
-                  return (
-                    <div
-                      key={u.id}
-                      className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/80 flex flex-col justify-between gap-4 hover:border-black/20 transition-all"
-                    >
-                      <div className="space-y-3">
-                        {/* Top row with avatar and role badges */}
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-center gap-3">
-                            {u.avatar_url ? (
-                              <img
-                                src={u.avatar_url}
-                                alt={u.full_name}
-                                className="w-12 h-12 rounded-xl object-cover ring-1 ring-black/10 shadow-2xs"
-                              />
-                            ) : (
-                              <div className="w-12 h-12 rounded-xl bg-slate-100 border border-black/10 flex items-center justify-center text-slate-800 text-lg font-bold">
-                                {u.full_name.charAt(0)}
-                              </div>
-                            )}
-                            <div>
-                              <div className="flex items-center gap-1.5">
-                                <h3 className="text-slate-950 font-semibold text-sm leading-tight">
-                                  {u.full_name}
-                                </h3>
-                                {u.is_verified && (
-                                  <CheckCircle2 size={13} className="text-emerald-600 shrink-0" />
-                                )}
-                                {isCurrent && (
-                                  <span className="text-[9px] px-1.5 py-0.5 rounded-md bg-slate-900 text-white font-mono">
-                                    You
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-slate-400 text-xs font-mono">@{u.username}</p>
-                              <p className="text-slate-600 text-xs mt-0.5">
-                                {devP?.title || (u.role === 'client' ? u.client_profile?.company_name || 'Client' : 'Platform Member')}
-                              </p>
-                            </div>
-                          </div>
 
-                          <div className="flex flex-col items-end gap-1">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-semibold font-mono ${
-                                u.role === 'super_admin'
-                                  ? 'bg-purple-50 text-purple-800 border border-purple-200'
-                                  : u.role === 'admin' || u.role === 'managing_director'
-                                  ? 'bg-indigo-50 text-indigo-800 border border-indigo-200'
-                                  : u.role === 'client'
-                                  ? 'bg-amber-50 text-amber-800 border border-amber-200'
-                                  : 'bg-slate-100 text-slate-800 border border-slate-200'
-                              }`}
-                            >
-                              {u.role.toUpperCase()}
-                            </span>
-                            <span
-                              className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${
-                                u.status === 'approved'
-                                  ? 'text-emerald-700 bg-emerald-50'
-                                  : u.status === 'pending'
-                                  ? 'text-amber-700 bg-amber-50'
-                                  : 'text-rose-700 bg-rose-50'
-                              }`}
-                            >
-                              {u.status}
-                            </span>
-                          </div>
+              <div className="liquid-glass rounded-3xl p-6 border border-black/[0.08] bg-white/70 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-instrument italic text-2xl text-slate-950">Recent System Audit Trail</h3>
+                  <button onClick={() => setActiveTab('activity')} className="text-xs text-slate-600 hover:text-black font-mono">
+                    View all &rarr;
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {activityLogs.slice(0, 4).length > 0 ? (
+                    activityLogs.slice(0, 4).map((log) => (
+                      <div key={log.id} className="p-2.5 rounded-xl bg-slate-50 border border-black/[0.04] text-xs flex items-center justify-between">
+                        <div>
+                          <span className="font-semibold text-slate-900">{log.action}</span>
+                          <span className="text-slate-500 ml-2 font-mono">{log.entity_type}</span>
                         </div>
-
-                        {/* Contact details */}
-                        <div className="text-xs text-slate-500 space-y-0.5">
-                          <p className="flex items-center gap-1.5">
-                            <Mail size={12} className="text-slate-400" />
-                            <span>{u.email}</span>
-                          </p>
-                          {u.phone && (
-                            <p className="flex items-center gap-1.5">
-                              <Phone size={12} className="text-slate-400" />
-                              <span>{u.phone}</span>
-                            </p>
-                          )}
-                          {devP?.location && (
-                            <p className="flex items-center gap-1.5">
-                              <MapPin size={12} className="text-slate-400" />
-                              <span>{devP.location}</span>
-                            </p>
-                          )}
-                        </div>
-
-                        {/* Skills preview */}
-                        {devP?.skills && devP.skills.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 pt-1">
-                            {devP.skills.slice(0, 6).map((s) => (
-                              <span
-                                key={s.id}
-                                className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-mono border border-black/5"
-                              >
-                                {s.name}
-                              </span>
-                            ))}
-                            {devP.skills.length > 6 && (
-                              <span className="text-[10px] text-slate-400 font-mono self-center">
-                                +{devP.skills.length - 6} more
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Card actions */}
-                      <div className="pt-3 border-t border-black/[0.06] flex items-center justify-between gap-2">
-                        <span className="text-[11px] text-slate-400 font-mono">
-                          {u.projects_count ?? 0} Project{u.projects_count === 1 ? '' : 's'}
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {new Date(log.created_at).toLocaleTimeString()}
                         </span>
-
-                        <div className="flex items-center gap-2">
-                          {devP && (
-                            <Link
-                              to={`/developers/${u.username}`}
-                              className="px-3 py-1.5 rounded-lg text-slate-600 hover:text-black text-xs font-semibold hover:bg-slate-100 transition-colors flex items-center gap-1"
-                            >
-                              <ExternalLink size={12} />
-                              <span>View</span>
-                            </Link>
-                          )}
-
-                          <button
-                            onClick={() => openEditModal(u)}
-                            className="bg-black text-white hover:bg-slate-800 px-3.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all shadow-2xs"
-                          >
-                            <Edit3 size={12} />
-                            <span>Edit Details</span>
-                          </button>
-
-                          {!isCurrent && (
-                            <button
-                              onClick={() => handleDeleteUser(u.id, u.full_name)}
-                              className="p-1.5 rounded-lg text-rose-500 hover:bg-rose-50 transition-colors"
-                              title="Delete User"
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                  );
-                })}
+                    ))
+                  ) : (
+                    <p className="text-xs text-slate-400 font-instrument italic py-4 text-center">No activity recorded yet.</p>
+                  )}
+                </div>
               </div>
-            )}
+            </div>
           </div>
         )}
 
-        {/* ── Tab 2: Developer Approval Queue ── */}
-        {activeTab === 'pending' && (
-          <div className="space-y-4">
-            {pendingDevs.length === 0 ? (
-              <div className="liquid-glass rounded-3xl p-16 text-center border border-black/[0.08] shadow-sm bg-white/70">
-                <CheckCircle2 size={40} className="mx-auto text-slate-300 mb-3" />
-                <h3 className="font-instrument italic text-2xl text-slate-950 mb-1">
-                  All Applications Reviewed
-                </h3>
-                <p className="text-slate-500 text-sm">
-                  There are no pending developer registrations waiting for approval.
-                </p>
+        {/* ── TAB 2: TEAM MANAGEMENT ── */}
+        {activeTab === 'team' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-instrument italic text-2xl text-slate-950">Core Engineering Squad</h3>
+                <p className="text-slate-500 text-xs">Manage developer accounts, update dynamic designations, and assign departments.</p>
               </div>
-            ) : (
-              pendingDevs.map((dev) => (
-                <div
-                  key={dev.id}
-                  className="liquid-glass rounded-2xl p-5 flex flex-col md:flex-row md:items-center justify-between gap-6 border border-black/[0.08] shadow-sm bg-white/70"
-                >
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-slate-200 border border-black/[0.08] flex items-center justify-center text-slate-900 text-lg font-bold shrink-0 shadow-2xs">
-                      {dev.user.full_name.charAt(0)}
+              <button
+                onClick={() => setIsAddDevOpen(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                <UserPlus size={13} /> Add Developer
+              </button>
+            </div>
+
+            <div className="liquid-glass rounded-3xl border border-black/[0.08] overflow-hidden shadow-sm bg-white/70">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-50/80 border-b border-black/[0.06] text-slate-500 uppercase font-mono tracking-wider text-[10px]">
+                    <tr>
+                      <th className="py-3.5 px-4">Developer</th>
+                      <th className="py-3.5 px-4">Dynamic Designation</th>
+                      <th className="py-3.5 px-4">Department</th>
+                      <th className="py-3.5 px-4">Status</th>
+                      <th className="py-3.5 px-4">Experience</th>
+                      <th className="py-3.5 px-4 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-black/[0.04]">
+                    {developers.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-12 text-center text-slate-400 font-instrument italic text-sm">
+                          No developers configured yet. Click "Add Developer" to create real accounts.
+                        </td>
+                      </tr>
+                    ) : (
+                      developers.map((dev) => (
+                        <tr key={dev.id} className="hover:bg-black/[0.01] transition-colors">
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              {dev.avatar_url ? (
+                                <img src={dev.avatar_url} alt="" className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-instrument italic text-slate-900 text-sm">
+                                  {dev.full_name?.charAt(0)}
+                                </div>
+                              )}
+                              <div>
+                                <div className="font-semibold text-slate-900">{dev.full_name}</div>
+                                <div className="text-[11px] text-slate-400 font-mono">@{dev.username} · {dev.email}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="font-mono text-slate-800 font-medium">
+                              {dev.developer_profile?.title || 'Software Engineer'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono bg-slate-100 text-slate-700">
+                              {dev.developer_profile?.department || 'Engineering'}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono ${
+                              dev.status === 'approved' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                            }`}>
+                              {dev.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 font-mono">
+                            {dev.developer_profile?.years_experience || 0} yrs
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <button
+                                onClick={() => openEditDeveloper(dev)}
+                                className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                title="Edit Designation & Profile"
+                              >
+                                <Edit3 size={13} />
+                              </button>
+                              <button
+                                onClick={() => { setResetPwUser(dev); setNewPassword(''); }}
+                                className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-600 hover:text-black"
+                                title="Reset Password"
+                              >
+                                <Key size={13} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteDeveloper(dev.id, dev.full_name)}
+                                className="p-1.5 rounded-lg liquid-glass border border-black/10 text-slate-400 hover:text-rose-600"
+                                title="Delete Developer"
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 3: PROJECTS ── */}
+        {activeTab === 'projects' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-instrument italic text-2xl text-slate-950">Platform Deliverables &amp; Projects</h3>
+                <p className="text-slate-500 text-xs">All projects engineered with verified creator attribution.</p>
+              </div>
+              <Link
+                to="/dashboard/my-projects?action=new"
+                className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
+              >
+                <Plus size={13} /> New Project
+              </Link>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+              {allProjects.map((p) => (
+                <div key={p.id} className="liquid-glass rounded-3xl p-6 border border-black/[0.08] bg-white/70 space-y-4 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                        {p.category}
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                        {p.status}
+                      </span>
                     </div>
-
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h3 className="text-slate-950 font-semibold text-base">
-                          {dev.user.full_name}
-                        </h3>
-                        <span className="text-slate-400 text-xs font-mono">
-                          @{dev.user.username}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border border-amber-200 bg-amber-50 text-amber-800 font-mono">
-                          Pending Review
-                        </span>
-                      </div>
-
-                      <p className="text-slate-700 text-sm">
-                        {dev.title || 'Software Developer'}
-                      </p>
-
-                      {dev.short_bio && (
-                        <p className="text-slate-500 text-xs mt-1 max-w-xl leading-relaxed">
-                          {dev.short_bio}
-                        </p>
-                      )}
-
-                      <div className="flex flex-wrap items-center gap-2 mt-3">
-                        {dev.skills.map((skill) => (
-                          <span
-                            key={skill.id}
-                            className="px-2.5 py-0.5 rounded-full text-xs font-mono border border-black/10 bg-white text-slate-700 shadow-2xs"
-                          >
-                            {skill.name}
+                    <h4 className="font-instrument italic text-xl text-slate-950">{p.name}</h4>
+                    <p className="text-slate-600 text-xs line-clamp-2 mt-1">{p.short_description || p.description}</p>
+                    
+                    {/* Attributed Developers */}
+                    <div className="mt-4 pt-3 border-t border-black/[0.04]">
+                      <p className="text-[10px] font-mono uppercase text-slate-400 mb-1.5">Attributed Team:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {p.developer_associations.map((assoc) => (
+                          <span key={assoc.id} className="text-[11px] font-mono text-slate-800 bg-slate-100 px-2 py-0.5 rounded-md">
+                            {assoc.developer?.user?.full_name} ({assoc.role_in_project})
                           </span>
                         ))}
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 shrink-0 self-end md:self-center">
-                    <button
-                      onClick={() => handleApplicationAction(dev.id, 'approve')}
-                      className="bg-black text-white hover:bg-slate-800 px-5 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
-                    >
-                      <CheckCircle2 size={14} />
-                      <span>Approve & Verify</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleApplicationAction(dev.id, 'reject')}
-                      className="liquid-glass text-slate-600 hover:text-rose-600 hover:border-rose-200 px-4 py-2.5 rounded-full text-xs font-semibold transition-all border border-black/10 bg-slate-50"
-                    >
-                      <span>Reject</span>
-                    </button>
+                  <div className="pt-3 border-t border-black/[0.06] flex items-center justify-between">
+                    <Link to={`/projects/${p.slug}`} className="text-xs font-semibold text-slate-900 hover:text-black flex items-center gap-1">
+                      <span>View Showcase</span> <ExternalLink size={12} />
+                    </Link>
                   </div>
                 </div>
-              ))
-            )}
+              ))}
+            </div>
           </div>
         )}
 
-        {/* ── Tab 3: All Published Projects ── */}
-        {activeTab === 'projects' && (
-          <div className="space-y-4">
-            {allProjects.length === 0 ? (
-              <div className="liquid-glass rounded-3xl p-16 text-center border border-black/[0.08] shadow-sm bg-white/70">
-                <FolderGit2 size={40} className="mx-auto text-slate-300 mb-3" />
-                <h3 className="font-instrument italic text-2xl text-slate-950 mb-1">
-                  No Projects Yet
-                </h3>
-                <p className="text-slate-500 text-sm">
-                  Verified developers and administrators can create and publish architectures.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {allProjects.map((p) => (
-                  <div
-                    key={p.id}
-                    className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/80 flex flex-col justify-between gap-4"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 block mb-0.5">
-                            {p.category}
-                          </span>
-                          <h3 className="text-slate-950 font-semibold text-base leading-snug">
-                            {p.name}
-                          </h3>
-                          <p className="text-slate-400 text-xs font-mono">/{p.slug}</p>
-                        </div>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200 font-mono">
-                          {p.status}
-                        </span>
-                      </div>
-
-                      {p.short_description && (
-                        <p className="text-slate-600 text-xs line-clamp-2 leading-relaxed">
-                          {p.short_description}
-                        </p>
-                      )}
-
-                      {/* Tech stack */}
-                      {p.technologies && p.technologies.length > 0 && (
-                        <div className="flex flex-wrap gap-1 pt-1">
-                          {p.technologies.map((t) => (
-                            <span
-                              key={t.id}
-                              className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[10px] font-mono border border-black/5"
-                            >
-                              {t.name}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t border-black/[0.06] flex items-center justify-between">
-                      <span className="text-[11px] text-slate-400 font-mono">
-                        {p.client_name ? `Client: ${p.client_name}` : 'Internal / Community'}
-                      </span>
-
-                      <Link
-                        to={`/projects/${p.slug}`}
-                        className="px-3.5 py-1.5 rounded-lg bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-all flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <ExternalLink size={12} />
-                        <span>View Project</span>
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* ── Tab 4: Inquiries Pipeline ── */}
-        {activeTab === 'inquiries' && (
-          <div className="space-y-4">
-            {inquiries.length === 0 ? (
-              <div className="liquid-glass rounded-3xl p-16 text-center border border-black/[0.08] shadow-sm bg-white/70">
-                <MessageSquare size={40} className="mx-auto text-slate-300 mb-3" />
-                <h3 className="font-instrument italic text-2xl text-slate-950 mb-1">
-                  Inquiries Pipeline Empty
-                </h3>
-                <p className="text-slate-500 text-sm">
-                  Client inquiries for custom engineering architectures will be logged here.
-                </p>
-              </div>
-            ) : (
-              inquiries.map((inq) => (
-                <div
-                  key={inq.id}
-                  className="liquid-glass rounded-2xl p-5 border border-black/[0.08] shadow-sm bg-white/70 space-y-3"
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <span className="text-slate-400 text-xs font-mono uppercase tracking-wider block mb-1">
-                        Inquiry #{inq.id} · {new Date(inq.created_at).toLocaleDateString()}
-                      </span>
-                      <h3 className="text-slate-950 font-semibold text-lg">
-                        {inq.project_name}
-                      </h3>
-                    </div>
-                    <span className="px-3 py-1 rounded-full text-xs font-semibold border border-black/10 bg-slate-50 text-slate-800 font-mono self-start sm:self-auto">
-                      {inq.status}
-                    </span>
-                  </div>
-
-                  <p className="text-slate-600 text-sm leading-relaxed max-w-3xl">
-                    {inq.description}
-                  </p>
-
-                  <div className="flex flex-wrap items-center gap-4 text-xs text-slate-500 pt-2 border-t border-black/[0.06]">
-                    <span>
-                      Client:{' '}
-                      <strong className="text-slate-800">
-                        {inq.client ? inq.client.full_name : 'Guest User'}
-                      </strong>
-                    </span>
-                    <span>
-                      Target Developer:{' '}
-                      <strong className="text-slate-800">
-                        {inq.developer && inq.developer.user
-                          ? inq.developer.user.full_name
-                          : 'General Team'}
-                      </strong>
-                    </span>
-                    {inq.budget_range && (
-                      <span>
-                        Budget: <strong className="text-slate-800">₹{inq.budget_range}</strong>
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        )}
-
-      </div>
-
-      {/* ── Universal Edit Member Modal ── */}
-      {editingUser && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-3xl max-w-2xl w-full border border-black/10 shadow-2xl overflow-hidden my-8 max-h-[90vh] flex flex-col">
-
-            {/* Modal Header */}
-            <div className="px-6 py-5 border-b border-black/[0.08] flex items-center justify-between bg-slate-50/70">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-black text-white flex items-center justify-center font-bold text-base shadow-xs">
-                  {editFormData.full_name ? editFormData.full_name.charAt(0) : editingUser.username.charAt(0)}
-                </div>
-                <div>
-                  <h2 className="font-instrument italic text-xl text-slate-950">
-                    Edit Member Details
-                  </h2>
-                  <p className="text-xs text-slate-500 font-mono">
-                    @{editingUser.username} · {editingUser.email}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => setEditingUser(null)}
-                className="p-2 rounded-full text-slate-400 hover:text-black hover:bg-slate-100 transition-colors"
-              >
-                <X size={18} />
-              </button>
+        {/* ── TAB 4: CLIENTS ── */}
+        {activeTab === 'clients' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-instrument italic text-2xl text-slate-950">Client Directory</h3>
+              <p className="text-slate-500 text-xs">Registered clients and enterprise partners.</p>
             </div>
 
-            {/* Modal Body */}
-            <form onSubmit={handleSaveUser} className="p-6 space-y-6 overflow-y-auto flex-1 text-slate-900">
-              {actionError && (
-                <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2">
-                  <AlertCircle size={15} className="shrink-0 text-rose-500" />
-                  <span>{actionError}</span>
-                </div>
-              )}
-
-              {/* 1. Profile Picture */}
-              <div className="space-y-3 pb-4 border-b border-black/[0.06]">
-                <label className="block text-slate-700 text-xs font-semibold uppercase tracking-wider font-mono">
-                  Profile Picture
-                </label>
-                <div className="flex items-center gap-4">
-                  {editFormData.avatar_url ? (
-                    <img
-                      src={editFormData.avatar_url}
-                      alt="Avatar preview"
-                      className="w-16 h-16 rounded-2xl object-cover ring-2 ring-black/10 shadow-sm"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400';
-                      }}
-                    />
+            <div className="liquid-glass rounded-3xl border border-black/[0.08] overflow-hidden bg-white/70">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/80 border-b border-black/[0.06] text-slate-500 uppercase font-mono tracking-wider text-[10px]">
+                  <tr>
+                    <th className="py-3 px-4">Client</th>
+                    <th className="py-3 px-4">Company</th>
+                    <th className="py-3 px-4">Email</th>
+                    <th className="py-3 px-4">Registered Date</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.04]">
+                  {clientsList.length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="py-12 text-center text-slate-400 font-instrument italic">
+                        No clients registered yet. Clients appear here upon registering or submitting consultations.
+                      </td>
+                    </tr>
                   ) : (
-                    <div className="w-16 h-16 rounded-2xl bg-slate-100 border border-black/10 flex items-center justify-center text-slate-400">
-                      <Camera size={22} />
-                    </div>
-                  )}
-
-                  <div className="flex-1 space-y-1">
-                    <input
-                      type="url"
-                      value={editFormData.avatar_url}
-                      onChange={(e) => setEditFormData({ ...editFormData, avatar_url: e.target.value })}
-                      placeholder="Paste image URL (e.g. https://images.unsplash.com/...)"
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:border-black/30"
-                    />
-                    <p className="text-[11px] text-slate-400">
-                      Direct image link (JPG/PNG). Leave empty to use default initials.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* 2. Core Account Info */}
-              <div className="space-y-4 pb-4 border-b border-black/[0.06]">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-                  Account Credentials & Governance
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Full Name</label>
-                    <input
-                      type="text"
-                      required
-                      value={editFormData.full_name}
-                      onChange={(e) => setEditFormData({ ...editFormData, full_name: e.target.value })}
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Phone Number</label>
-                    <input
-                      type="text"
-                      value={editFormData.phone}
-                      onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
-                      placeholder="+91 9400900000"
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Platform Role</label>
-                    <select
-                      value={editFormData.role}
-                      onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value })}
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    >
-                      <option value="developer">Developer</option>
-                      <option value="super_admin">Super Admin (CEO)</option>
-                      <option value="managing_director">Managing Director (MD)</option>
-                      <option value="admin">Administrator</option>
-                      <option value="client">Client</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Account Status</label>
-                    <select
-                      value={editFormData.status}
-                      onChange={(e) => setEditFormData({ ...editFormData, status: e.target.value })}
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    >
-                      <option value="approved">Approved</option>
-                      <option value="pending">Pending Review</option>
-                      <option value="rejected">Rejected</option>
-                      <option value="suspended">Suspended</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-6 pt-1">
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={editFormData.is_verified}
-                      onChange={(e) => setEditFormData({ ...editFormData, is_verified: e.target.checked })}
-                      className="rounded text-black focus:ring-black w-4 h-4"
-                    />
-                    <span>Verified Developer Badge</span>
-                  </label>
-
-                  <label className="flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-800">
-                    <input
-                      type="checkbox"
-                      checked={editFormData.is_active}
-                      onChange={(e) => setEditFormData({ ...editFormData, is_active: e.target.checked })}
-                      className="rounded text-black focus:ring-black w-4 h-4"
-                    />
-                    <span>Account Active</span>
-                  </label>
-                </div>
-              </div>
-
-              {/* 3. Developer / Leadership Profile Details */}
-              <div className="space-y-4 pb-4 border-b border-black/[0.06]">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-                  Profile Details & Technical Focus
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Professional Title</label>
-                    <input
-                      type="text"
-                      value={editFormData.title}
-                      onChange={(e) => setEditFormData({ ...editFormData, title: e.target.value })}
-                      placeholder="e.g. Chief Executive Officer (CEO)"
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Location</label>
-                    <input
-                      type="text"
-                      value={editFormData.location}
-                      onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
-                      placeholder="e.g. Hyderabad, India"
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Availability Status</label>
-                    <input
-                      type="text"
-                      value={editFormData.availability}
-                      onChange={(e) => setEditFormData({ ...editFormData, availability: e.target.value })}
-                      placeholder="e.g. Available for Projects"
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Years of Experience</label>
-                    <input
-                      type="number"
-                      min={0}
-                      max={50}
-                      value={editFormData.years_experience}
-                      onChange={(e) => setEditFormData({ ...editFormData, years_experience: Number(e.target.value) })}
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 text-xs font-medium mb-1">Short Bio</label>
-                  <input
-                    type="text"
-                    value={editFormData.short_bio}
-                    onChange={(e) => setEditFormData({ ...editFormData, short_bio: e.target.value })}
-                    placeholder="Brief 1-sentence tagline..."
-                    className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-slate-700 text-xs font-medium mb-1">Full Bio / Leadership Statement</label>
-                  <textarea
-                    rows={3}
-                    value={editFormData.bio}
-                    onChange={(e) => setEditFormData({ ...editFormData, bio: e.target.value })}
-                    placeholder="Comprehensive description of engineering capabilities, achievements, or vision..."
-                    className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 focus:outline-none focus:border-black/30 resize-none"
-                  />
-                </div>
-              </div>
-
-              {/* 4. Skills Management */}
-              <div className="space-y-3 pb-4 border-b border-black/[0.06]">
-                <label className="block text-slate-700 text-xs font-bold uppercase tracking-wider font-mono">
-                  Skills & Technical Domains ({editFormData.skills.length})
-                </label>
-                <div className="flex flex-wrap gap-1.5 p-3 rounded-xl bg-slate-50 border border-black/10 min-h-[48px]">
-                  {editFormData.skills.length === 0 ? (
-                    <span className="text-slate-400 text-xs italic">No skills listed yet. Add one below.</span>
-                  ) : (
-                    editFormData.skills.map((skill) => (
-                      <span
-                        key={skill}
-                        className="px-2.5 py-1 rounded-lg bg-white border border-black/10 text-slate-800 text-xs font-mono flex items-center gap-1.5 shadow-2xs"
-                      >
-                        <span>{skill}</span>
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveSkill(skill)}
-                          className="text-slate-400 hover:text-rose-600 transition-colors"
-                        >
-                          <X size={12} />
-                        </button>
-                      </span>
+                    clientsList.map((c) => (
+                      <tr key={c.id}>
+                        <td className="py-3 px-4 font-semibold text-slate-900">{c.full_name}</td>
+                        <td className="py-3 px-4 text-slate-600 font-mono">{c.client_profile?.company_name || 'Individual'}</td>
+                        <td className="py-3 px-4 text-slate-500 font-mono">{c.email}</td>
+                        <td className="py-3 px-4 text-slate-400 font-mono">{new Date(c.created_at).toLocaleDateString()}</td>
+                      </tr>
                     ))
                   )}
-                </div>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
 
-                <div className="flex gap-2">
+        {/* ── TAB 5: INQUIRIES ── */}
+        {activeTab === 'inquiries' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-instrument italic text-2xl text-slate-950">Client Consultations &amp; Inquiries</h3>
+              <p className="text-slate-500 text-xs">Direct consultation requests from prospective clients.</p>
+            </div>
+
+            <div className="space-y-4">
+              {inquiries.length === 0 ? (
+                <div className="liquid-glass rounded-3xl p-12 text-center text-slate-400 font-instrument italic bg-white/70 border border-black/[0.08]">
+                  No inquiries received yet.
+                </div>
+              ) : (
+                inquiries.map((inq) => (
+                  <div key={inq.id} className="liquid-glass rounded-3xl p-6 border border-black/[0.08] bg-white/70 space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
+                          {inq.project_type || 'Consultation'}
+                        </span>
+                        <h4 className="font-instrument italic text-xl text-slate-950 mt-1">{inq.project_name}</h4>
+                        <p className="text-xs text-slate-400 font-mono mt-0.5">
+                          From: {inq.client_name || inq.client?.full_name || 'Anonymous Client'} ({inq.client_email || inq.client?.email}) · {new Date(inq.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-mono text-slate-500">Status:</span>
+                        <select
+                          value={inq.status}
+                          onChange={(e) => handleInquiryStatus(inq.id, e.target.value)}
+                          className="px-3 py-1.5 rounded-xl border border-black/10 bg-white text-xs font-mono font-semibold focus:outline-none"
+                        >
+                          {['New', 'Contacted', 'In Discussion', 'Proposal', 'In Progress', 'Completed', 'Closed'].map((st) => (
+                            <option key={st} value={st}>{st}</option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed bg-slate-50 p-4 rounded-2xl border border-black/[0.04] whitespace-pre-wrap font-sans">
+                      {inq.description}
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB 6: BRAND & SETTINGS ── */}
+        {activeTab === 'brand' && (
+          <div className="max-w-4xl space-y-6">
+            <div>
+              <h3 className="font-instrument italic text-2xl text-slate-950">Company Branding &amp; Platform Configuration</h3>
+              <p className="text-slate-500 text-xs">Update your official company identity, logos, contacts, and legal notices.</p>
+            </div>
+
+            <form onSubmit={handleSaveBrandSettings} className="liquid-glass rounded-3xl p-8 border border-black/[0.08] bg-white/70 space-y-6">
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Company Name *</label>
                   <input
                     type="text"
-                    value={newSkillInput}
-                    onChange={(e) => setNewSkillInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        handleAddSkill();
-                      }
-                    }}
-                    placeholder="Type skill name (e.g. Next.js, AI/ML, Docker) and click Add"
-                    className="flex-1 bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-black/30"
+                    required
+                    value={brandForm.company_name || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, company_name: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddSkill}
-                    className="bg-black text-white hover:bg-slate-800 px-4 py-2 rounded-xl text-xs font-semibold shadow-2xs flex items-center gap-1"
-                  >
-                    <Plus size={13} />
-                    <span>Add</span>
-                  </button>
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Tagline</label>
+                  <input
+                    type="text"
+                    value={brandForm.tagline || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, tagline: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                  />
                 </div>
               </div>
 
-              {/* 5. Social & Portfolio Links */}
-              <div className="space-y-4 pb-2">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 font-mono">
-                  Online Presence & Artifact Links
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">GitHub URL</label>
-                    <input
-                      type="url"
-                      value={editFormData.github_url}
-                      onChange={(e) => setEditFormData({ ...editFormData, github_url: e.target.value })}
-                      placeholder="https://github.com/..."
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">LinkedIn URL</label>
-                    <input
-                      type="url"
-                      value={editFormData.linkedin_url}
-                      onChange={(e) => setEditFormData({ ...editFormData, linkedin_url: e.target.value })}
-                      placeholder="https://linkedin.com/in/..."
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Portfolio / Work Details URL</label>
-                    <input
-                      type="url"
-                      value={editFormData.portfolio_url}
-                      onChange={(e) => setEditFormData({ ...editFormData, portfolio_url: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-slate-700 text-xs font-medium mb-1">Resume / Document URL</label>
-                    <input
-                      type="url"
-                      value={editFormData.resume_url}
-                      onChange={(e) => setEditFormData({ ...editFormData, resume_url: e.target.value })}
-                      placeholder="https://..."
-                      className="w-full bg-slate-50 border border-black/10 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:outline-none focus:border-black/30"
-                    />
-                  </div>
+              <div className="grid sm:grid-cols-2 gap-5">
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Logo URL</label>
+                  <input
+                    type="text"
+                    value={brandForm.logo_url || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, logo_url: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Official Email</label>
+                  <input
+                    type="email"
+                    value={brandForm.email || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, email: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                  />
                 </div>
               </div>
 
-              {/* Modal Footer */}
-              <div className="pt-4 border-t border-black/[0.08] flex items-center justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => setEditingUser(null)}
-                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-slate-600 hover:text-black hover:bg-slate-100 transition-colors"
-                >
-                  Cancel
-                </button>
+              <div>
+                <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Platform Description</label>
+                <textarea
+                  rows={3}
+                  value={brandForm.description || ''}
+                  onChange={(e) => setBrandForm({ ...brandForm, description: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none resize-none"
+                />
+              </div>
+
+              <div className="grid sm:grid-cols-3 gap-5">
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Phone</label>
+                  <input
+                    type="text"
+                    value={brandForm.phone || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, phone: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Website</label>
+                  <input
+                    type="text"
+                    value={brandForm.website || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, website: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Business Hours</label>
+                  <input
+                    type="text"
+                    value={brandForm.business_hours || ''}
+                    onChange={(e) => setBrandForm({ ...brandForm, business_hours: e.target.value })}
+                    className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Headquarters Address</label>
+                <input
+                  type="text"
+                  value={brandForm.address || ''}
+                  onChange={(e) => setBrandForm({ ...brandForm, address: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-2">Footer Copyright Text</label>
+                <input
+                  type="text"
+                  value={brandForm.footer_copyright || ''}
+                  onChange={(e) => setBrandForm({ ...brandForm, footer_copyright: e.target.value })}
+                  className="w-full px-4 py-2.5 rounded-xl bg-white border border-black/10 text-slate-900 text-sm focus:border-black/30 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-4 border-t border-black/[0.06] flex justify-end">
                 <button
                   type="submit"
-                  disabled={isSaving}
-                  className="bg-black text-white hover:bg-slate-800 disabled:opacity-50 px-6 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2 transition-all shadow-sm"
+                  className="px-6 py-2.5 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800 transition-colors shadow-sm"
                 >
-                  <span>{isSaving ? 'Saving Updates…' : 'Save Member Details'}</span>
+                  Save Settings
                 </button>
               </div>
             </form>
           </div>
-        </div>
-      )}
+        )}
 
+        {/* ── TAB 7: ACTIVITY LOGS ── */}
+        {activeTab === 'activity' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="font-instrument italic text-2xl text-slate-950">Executive Audit Trail</h3>
+              <p className="text-slate-500 text-xs">Immutable chronological activity logs for compliance and accountability.</p>
+            </div>
+
+            <div className="liquid-glass rounded-3xl border border-black/[0.08] overflow-hidden bg-white/70">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-slate-50/80 border-b border-black/[0.06] text-slate-500 uppercase font-mono tracking-wider text-[10px]">
+                  <tr>
+                    <th className="py-3 px-4">Timestamp</th>
+                    <th className="py-3 px-4">Action</th>
+                    <th className="py-3 px-4">Entity Type</th>
+                    <th className="py-3 px-4">Entity ID</th>
+                    <th className="py-3 px-4">User</th>
+                    <th className="py-3 px-4">IP Address</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-black/[0.04]">
+                  {activityLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-12 text-center text-slate-400 font-instrument italic">
+                        No activity records found yet.
+                      </td>
+                    </tr>
+                  ) : (
+                    activityLogs.map((log) => (
+                      <tr key={log.id}>
+                        <td className="py-3 px-4 text-slate-400 font-mono">
+                          {new Date(log.created_at).toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 font-semibold text-slate-900">{log.action}</td>
+                        <td className="py-3 px-4 font-mono text-slate-600">{log.entity_type || '-'}</td>
+                        <td className="py-3 px-4 font-mono text-slate-500">{log.entity_id || '-'}</td>
+                        <td className="py-3 px-4 text-slate-700">{log.user?.full_name || 'CEO'}</td>
+                        <td className="py-3 px-4 font-mono text-slate-400">{log.ip_address || '127.0.0.1'}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL 1: ADD DEVELOPER ── */}
+        {isAddDevOpen && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 border border-black/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <h3 className="font-instrument italic text-2xl text-slate-950">Add Verified Developer</h3>
+                <button onClick={() => setIsAddDevOpen(false)} className="p-1 rounded-full text-slate-400 hover:text-black">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCreateDeveloper} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevForm.full_name}
+                      onChange={(e) => setNewDevForm({ ...newDevForm, full_name: e.target.value })}
+                      placeholder="e.g. Rahul Sharma"
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Username *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevForm.username}
+                      onChange={(e) => setNewDevForm({ ...newDevForm, username: e.target.value })}
+                      placeholder="e.g. rahul-sharma"
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Email *</label>
+                    <input
+                      type="email"
+                      required
+                      value={newDevForm.email}
+                      onChange={(e) => setNewDevForm({ ...newDevForm, email: e.target.value })}
+                      placeholder="rahul@company.com"
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Password *</label>
+                    <input
+                      type="password"
+                      required
+                      value={newDevForm.password}
+                      onChange={(e) => setNewDevForm({ ...newDevForm, password: e.target.value })}
+                      placeholder="Initial password"
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Designation / Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevForm.title}
+                      onChange={(e) => setNewDevForm({ ...newDevForm, title: e.target.value })}
+                      placeholder="Senior Full Stack Engineer"
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Department *</label>
+                    <input
+                      type="text"
+                      required
+                      value={newDevForm.department}
+                      onChange={(e) => setNewDevForm({ ...newDevForm, department: e.target.value })}
+                      placeholder="Core Engineering"
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Skills (comma separated) *</label>
+                  <input
+                    type="text"
+                    required
+                    value={newDevForm.skills}
+                    onChange={(e) => setNewDevForm({ ...newDevForm, skills: e.target.value })}
+                    placeholder="Python, FastAPI, React, TypeScript"
+                    className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-black/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => setIsAddDevOpen(false)}
+                    className="px-4 py-2 rounded-full border border-black/10 text-slate-600 text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800"
+                  >
+                    Create Developer
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL 2: EDIT DEVELOPER ── */}
+        {editingDev && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-5 border border-black/10 shadow-2xl max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-3 border-b border-black/[0.06]">
+                <div>
+                  <h3 className="font-instrument italic text-2xl text-slate-950">Edit Developer</h3>
+                  <p className="text-slate-400 text-xs font-mono">{editingDev.full_name} (@{editingDev.username})</p>
+                </div>
+                <button onClick={() => setEditingDev(null)} className="p-1 rounded-full text-slate-400 hover:text-black">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveDeveloper} className="space-y-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Dynamic Designation *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editDevForm.title}
+                      onChange={(e) => setEditDevForm({ ...editDevForm, title: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Department *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editDevForm.department}
+                      onChange={(e) => setEditDevForm({ ...editDevForm, department: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Account Status</label>
+                    <select
+                      value={editDevForm.status}
+                      onChange={(e) => setEditDevForm({ ...editDevForm, status: e.target.value })}
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    >
+                      <option value="approved">Approved / Active</option>
+                      <option value="pending">Pending</option>
+                      <option value="suspended">Suspended</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Years Experience</label>
+                    <input
+                      type="number"
+                      value={editDevForm.years_experience}
+                      onChange={(e) => setEditDevForm({ ...editDevForm, years_experience: parseInt(e.target.value) || 0 })}
+                      className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-slate-700 text-xs font-semibold uppercase font-mono mb-1">Professional Bio</label>
+                  <textarea
+                    rows={3}
+                    value={editDevForm.bio}
+                    onChange={(e) => setEditDevForm({ ...editDevForm, bio: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-black/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => setEditingDev(null)}
+                    className="px-4 py-2 rounded-full border border-black/10 text-slate-600 text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800"
+                  >
+                    Save Changes
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* ── MODAL 3: RESET PASSWORD ── */}
+        {resetPwUser && (
+          <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+            <div className="bg-white rounded-3xl max-w-sm w-full p-6 space-y-4 border border-black/10 shadow-2xl">
+              <div className="flex items-center justify-between pb-2 border-b border-black/[0.06]">
+                <h3 className="font-instrument italic text-xl text-slate-950">Reset Password</h3>
+                <button onClick={() => setResetPwUser(null)} className="p-1 rounded-full text-slate-400 hover:text-black">
+                  <X size={16} />
+                </button>
+              </div>
+
+              <p className="text-xs text-slate-600">
+                Set a new password for <span className="font-semibold text-slate-900">{resetPwUser.full_name}</span> ({resetPwUser.email}).
+              </p>
+
+              <form onSubmit={handleResetPassword} className="space-y-4">
+                <div>
+                  <label className="block text-slate-700 text-xs font-mono uppercase mb-1">New Password *</label>
+                  <input
+                    type="password"
+                    required
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="Enter new password"
+                    className="w-full px-3 py-2 rounded-xl border border-black/10 text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-black/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => setResetPwUser(null)}
+                    className="px-4 py-1.5 rounded-full border border-black/10 text-slate-600 text-xs"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-1.5 rounded-full bg-black text-white text-xs font-semibold hover:bg-slate-800"
+                  >
+                    Reset Password
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+      </div>
     </div>
   );
 };

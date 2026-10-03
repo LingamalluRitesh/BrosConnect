@@ -47,11 +47,11 @@ async def post_channel_message(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    # Only developers or admins can post in community channels (PRD Section 15)
-    if current_user.role not in ["super_admin", "managing_director", "admin", "developer"]:
+    # Only developers or CEO/super_admin can post in community channels
+    if current_user.role not in ["super_admin", "developer"]:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Community channels are restricted to developers and staff."
+            detail="Community channels are restricted to developers and leadership."
         )
 
     ch_stmt = select(CommunityChannel).where(CommunityChannel.id == channel_id)
@@ -59,7 +59,7 @@ async def post_channel_message(
     if not ch:
         raise HTTPException(status_code=404, detail="Channel not found")
 
-    if ch.is_locked and current_user.role not in ["super_admin", "managing_director", "admin"]:
+    if ch.is_locked and current_user.role != "super_admin":
         raise HTTPException(status_code=403, detail="Channel is locked for replies.")
 
     new_msg = CommunityMessage(
@@ -90,8 +90,8 @@ async def delete_channel_message(
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    # Author or admin can delete
-    if msg.user_id != current_user.id and current_user.role not in ["super_admin", "managing_director", "admin"]:
+    # Author or CEO (super_admin) can delete
+    if msg.user_id != current_user.id and current_user.role != "super_admin":
         raise HTTPException(status_code=403, detail="Not authorized to delete this message")
 
     await db.delete(msg)

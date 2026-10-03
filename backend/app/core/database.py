@@ -63,6 +63,8 @@ def normalize_database_url(raw_url: str):
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE
         connect_args["ssl"] = ssl_ctx
+        connect_args["statement_cache_size"] = 0
+        connect_args["timeout"] = 30
 
     # Neon serverless pooling optimizations
     engine_kwargs["pool_pre_ping"] = True

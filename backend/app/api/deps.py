@@ -69,7 +69,7 @@ async def get_current_user_optional(
 async def get_current_verified_developer(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    if current_user.role in ["super_admin", "managing_director", "admin"]:
+    if current_user.role == "super_admin":
         return current_user
     if current_user.role != "developer" or not current_user.is_verified:
         raise HTTPException(
@@ -81,10 +81,10 @@ async def get_current_verified_developer(
 async def get_current_admin(
     current_user: User = Depends(get_current_user)
 ) -> User:
-    if current_user.role not in ["super_admin", "managing_director", "admin"]:
+    if current_user.role != "super_admin":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin privileges required"
+            detail="CEO privileges required"
         )
     return current_user
 

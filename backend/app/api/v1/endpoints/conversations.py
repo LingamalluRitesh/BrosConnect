@@ -100,7 +100,7 @@ async def get_messages(
         ConversationMember.user_id == current_user.id
     )
     membership = (await db.execute(mem_stmt)).scalar_one_or_none()
-    if not membership and current_user.role not in ["super_admin", "managing_director"]:
+    if not membership and current_user.role != "super_admin":
         raise HTTPException(status_code=403, detail="Not authorized to view this conversation")
 
     stmt = (

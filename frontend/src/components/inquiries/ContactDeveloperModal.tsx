@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 import type { DeveloperProfile } from '../../types';
 
 interface ContactDeveloperModalProps {
@@ -16,6 +17,8 @@ export const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({
   onClose,
 }) => {
   const { user } = useAuth();
+  const { settings } = useSettings();
+  const companyName = settings?.company_name || 'RMVS Web Services';
   const [projectName, setProjectName] = useState('');
   const [projectType, setProjectType] = useState('Web Application');
   const [budgetRange, setBudgetRange] = useState('₹50,000 - ₹1,50,000');
@@ -91,7 +94,7 @@ export const ContactDeveloperModal: React.FC<ContactDeveloperModalProps> = ({
             </div>
           </div>
           <p className="text-xs text-slate-600 leading-relaxed">
-            Submit your requirements for Bro's Connect review. Requests are dispatched directly to {developer.user.full_name} and our technical delivery team.
+            Submit your requirements for {companyName} review. Requests are dispatched directly to {developer.user.full_name} and our technical delivery team.
           </p>
         </div>
 

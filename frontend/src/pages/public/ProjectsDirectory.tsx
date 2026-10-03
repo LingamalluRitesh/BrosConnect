@@ -5,9 +5,13 @@ import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import type { Project } from '../../types';
 import { ProjectCard } from '../../components/projects/ProjectCard';
+import { useSettings } from '../../context/SettingsContext';
 
 export const ProjectsDirectory: React.FC = () => {
   const { user } = useAuth();
+  const { settings } = useSettings();
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -37,8 +41,8 @@ export const ProjectsDirectory: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <img src="/logo.png" alt="Bro's Connect" className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-            <p className="text-slate-500 text-xs tracking-widest uppercase font-mono">Bro's Connect Showcase</p>
+            <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+            <p className="text-slate-500 text-xs tracking-widest uppercase font-mono">{companyName} Showcase</p>
           </div>
           <h1 className="font-instrument italic text-[clamp(2rem,5vw,4rem)] leading-[1.05] text-slate-900">
             Featured <em>Projects</em>
@@ -47,7 +51,7 @@ export const ProjectsDirectory: React.FC = () => {
             Real software systems engineered by our verified developers. Every project features permanent creator attribution.
           </p>
         </div>
-        {user && (user.is_verified || ['super_admin', 'managing_director', 'admin'].includes(user.role)) && (
+        {user && (user.is_verified || user.role === 'super_admin') && (
           <Link
             to="/dashboard/my-projects?action=new"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-black text-white text-sm font-semibold hover:bg-slate-800 shadow-sm transition-colors shrink-0"

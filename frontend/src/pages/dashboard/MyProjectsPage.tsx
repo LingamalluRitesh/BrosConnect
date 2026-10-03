@@ -56,7 +56,7 @@ export const MyProjectsPage: React.FC = () => {
     setIsLoading(true);
     try {
       let endpoint = `/projects?developer_username=${user.username}`;
-      if (['super_admin', 'managing_director', 'admin'].includes(user.role)) {
+      if (user.role === 'super_admin') {
         endpoint = '/projects';
       }
       const res = await api.get(endpoint);
@@ -136,7 +136,7 @@ export const MyProjectsPage: React.FC = () => {
         ];
       }
 
-      if (finalTeam.length === 0 && !['super_admin', 'managing_director', 'admin'].includes(user.role)) {
+      if (finalTeam.length === 0 && user.role !== 'super_admin') {
         setFormError('At least one verified developer must be attributed to this project.');
         setIsSubmitting(false);
         return;
@@ -271,7 +271,7 @@ export const MyProjectsPage: React.FC = () => {
             </p>
           </div>
 
-          {user && (user.is_verified || ['super_admin', 'managing_director', 'admin'].includes(user.role)) && (
+          {user && (user.is_verified || user.role === 'super_admin') && (
             <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-2 bg-black text-white rounded-full px-6 py-2.5 text-sm font-semibold hover:bg-slate-800 transition-colors self-start sm:self-auto shrink-0 shadow-sm"
@@ -296,7 +296,7 @@ export const MyProjectsPage: React.FC = () => {
             <p className="text-slate-600 text-sm max-w-sm mx-auto mb-8">
               Your database is completely clean! You can now create and publish your first verified project with full attribution.
             </p>
-            {user && (user.is_verified || ['super_admin', 'managing_director', 'admin'].includes(user.role)) ? (
+            {user && (user.is_verified || user.role === 'super_admin') ? (
               <button
                 onClick={() => setIsModalOpen(true)}
                 className="bg-black text-white rounded-full px-7 py-3 text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm"
@@ -387,7 +387,7 @@ export const MyProjectsPage: React.FC = () => {
                   >
                     <option value="Websites">Websites</option>
                     <option value="Apps">Mobile Apps</option>
-                    <option value="Software">Software Architecture</option>
+                    <option value="Software">Enterprise Software</option>
                     <option value="AI/ML">AI / Machine Learning</option>
                     <option value="SaaS">Enterprise SaaS</option>
                     <option value="Automation">Automation</option>
@@ -573,7 +573,7 @@ export const MyProjectsPage: React.FC = () => {
               <X size={18} />
             </button>
 
-            <h2 className="font-instrument italic text-2xl text-slate-950 mb-1">Modify Published Architecture</h2>
+            <h2 className="font-instrument italic text-2xl text-slate-950 mb-1">Modify Published Project</h2>
             <p className="text-slate-500 text-xs mb-6">
               Update technical details, live endpoints, descriptions, or status for <span className="text-slate-900 font-medium">{editingProject.name}</span>.
             </p>
@@ -606,7 +606,7 @@ export const MyProjectsPage: React.FC = () => {
                   >
                     <option value="Websites">Websites</option>
                     <option value="Apps">Mobile Apps</option>
-                    <option value="Software">Software Architecture</option>
+                    <option value="Software">Enterprise Software</option>
                     <option value="AI/ML">AI / Machine Learning</option>
                     <option value="SaaS">Enterprise SaaS</option>
                     <option value="Automation">Automation</option>
@@ -649,7 +649,7 @@ export const MyProjectsPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="block text-slate-600 text-xs tracking-wider uppercase mb-1.5 font-mono">Full Architectural Overview</label>
+                <label className="block text-slate-600 text-xs tracking-wider uppercase mb-1.5 font-mono">Full Project Overview</label>
                 <textarea
                   rows={4}
                   value={editDescription}

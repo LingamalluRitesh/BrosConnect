@@ -1,8 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowRight, Check } from 'lucide-react';
+import { useSettings } from '../../context/SettingsContext';
 
 export const ServicesPage: React.FC = () => {
+  const { settings } = useSettings();
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
   const services = [
     {
       num: '01',
@@ -17,12 +21,12 @@ export const ServicesPage: React.FC = () => {
     },
     {
       num: '02',
-      title: 'Full-Stack Web Architectures',
+      title: 'Full-Stack Web Projects',
       tagline: 'Lightning-fast, highly concurrent web systems',
       deliverables: [
         'FastAPI & Python high-throughput microservices',
         'Modern React & TypeScript responsive single-page applications',
-        'Real-time WebSocket streaming architectures',
+        'Real-time WebSocket streaming applications',
         'PostgreSQL schema optimization & asynchronous ORM layers',
       ],
     },
@@ -77,14 +81,14 @@ export const ServicesPage: React.FC = () => {
       {/* Hero */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-12">
         <div className="flex items-center gap-3 mb-6">
-          <img src="/logo.png" alt="Bro's Connect" className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-          <p className="text-slate-400 text-xs tracking-widest uppercase font-mono">Bro's Connect Digital Solutions</p>
+          <img src={logoUrl} alt={companyName} className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+          <p className="text-slate-400 text-xs tracking-widest uppercase font-mono">{companyName} Digital Solutions</p>
         </div>
         <h1 className="font-instrument italic text-[clamp(2.5rem,6vw,5rem)] leading-[1.05] text-slate-950 mb-6 max-w-3xl">
           Services engineered <em>for scale.</em>
         </h1>
         <p className="text-slate-600 text-base leading-relaxed max-w-2xl">
-          From early-stage MVPs to complex distributed enterprise platforms, Bro's Connect verified developer network
+          From early-stage MVPs to complex distributed enterprise platforms, {companyName} verified developer network
           delivers clean, maintainable software with transparent pricing in Indian Rupees (₹).
         </p>
       </div>

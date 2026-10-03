@@ -8,7 +8,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('devconnect_token');
+  const token = localStorage.getItem('rmvs_token') || localStorage.getItem('devconnect_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -19,6 +19,7 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
+      localStorage.removeItem('rmvs_token');
       localStorage.removeItem('devconnect_token');
       // If we are not on public or login/register pages, we can optionally redirect
     }

@@ -4,8 +4,13 @@ import api from '../../api/client';
 import type { DeveloperProfile } from '../../types';
 import { DeveloperCard } from '../../components/developers/DeveloperCard';
 import { ContactDeveloperModal } from '../../components/inquiries/ContactDeveloperModal';
+import { useSettings } from '../../context/SettingsContext';
 
 export const DevelopersDirectory: React.FC = () => {
+  const { settings } = useSettings();
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
+
   const [developers, setDevelopers] = useState<DeveloperProfile[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSkill, setSelectedSkill] = useState('');
@@ -41,14 +46,14 @@ export const DevelopersDirectory: React.FC = () => {
       {/* Header */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-10">
         <div className="flex items-center gap-3 mb-4">
-          <img src="/logo.png" alt="Bro's Connect" className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-          <p className="text-slate-500 text-xs tracking-widest uppercase font-mono">Bro's Connect Roster</p>
+          <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+          <p className="text-slate-500 text-xs tracking-widest uppercase font-mono">{companyName} Roster</p>
         </div>
         <h1 className="font-instrument italic text-[clamp(2rem,5vw,4rem)] leading-[1.05] text-slate-900">
-          Verified <em>Architects</em>
+          Verified <em>Developers</em>
         </h1>
         <p className="text-slate-600 text-sm mt-3 max-w-xl leading-relaxed">
-          Browse our hand-verified roster of senior systems architects, AI engineers, and cloud specialists.
+          Browse our hand-verified roster of senior developers, AI engineers, and cloud specialists.
           Commission work directly without middleman markups.
         </p>
       </div>
@@ -126,7 +131,7 @@ export const DevelopersDirectory: React.FC = () => {
           </div>
         ) : developers.length === 0 ? (
           <div className="text-center py-20 liquid-glass rounded-3xl border border-black/[0.08] shadow-sm">
-            <p className="font-instrument italic text-slate-900 text-2xl mb-2">No architects found</p>
+            <p className="font-instrument italic text-slate-900 text-2xl mb-2">No developers found</p>
             <p className="text-slate-500 text-sm mb-6 max-w-sm mx-auto">Try adjusting your search criteria or removing skill filters.</p>
             <button onClick={clearFilters} className="px-5 py-2.5 rounded-full bg-black text-white text-sm font-semibold hover:bg-slate-800 transition-colors shadow-sm">
               Clear filters

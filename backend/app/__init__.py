@@ -1,2 +1,2 @@
-"""DevConnect Application Package"""
+"""RMVS Web Services Application Package"""
 __version__ = "1.0.0"

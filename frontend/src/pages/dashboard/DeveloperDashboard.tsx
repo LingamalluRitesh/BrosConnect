@@ -45,7 +45,7 @@ export const DeveloperDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     if (!user) return;
     try {
-      if (user.role === 'developer' || ['super_admin', 'managing_director', 'admin'].includes(user.role)) {
+      if (['super_admin', 'developer'].includes(user.role)) {
         const [inqRes, projRes] = await Promise.all([
           api.get('/inquiries/developer'),
           api.get(`/projects?developer_username=${user.username}`),
@@ -124,7 +124,7 @@ export const DeveloperDashboard: React.FC = () => {
 
   if (!user) return null;
 
-  const isDeveloper = user.role === 'developer' || ['super_admin', 'managing_director', 'admin'].includes(user.role);
+  const isDeveloper = user.role === 'developer' || user.role === 'super_admin';
   const isApproved = user.status === 'approved' && user.is_verified;
   const isPending = user.status === 'pending';
 

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List, Optional, Any
 from pydantic import BaseModel, EmailStr, Field
 
 # --- Token Schemas ---
@@ -38,7 +38,8 @@ class UserBase(BaseModel):
 
 class RegisterDeveloperRequest(UserBase):
     password: str = Field(..., min_length=6)
-    title: str = "Full-Stack Developer"
+    title: str = "Full Stack Developer"
+    department: str = "Engineering"
     short_bio: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
@@ -56,12 +57,6 @@ class RegisterClientRequest(UserBase):
     website: Optional[str] = None
     industry: Optional[str] = None
 
-class RegisterAdminRequest(UserBase):
-    password: str = Field(..., min_length=6)
-    role: str = "super_admin"
-    title: Optional[str] = "Chief Executive Officer"
-    admin_key: Optional[str] = None
-
 class LoginRequest(BaseModel):
     email_or_username: str
     password: str
@@ -70,18 +65,21 @@ class UserBrief(BaseModel):
     id: int
     username: str
     full_name: str
-    role: str
+    role: str # super_admin (CEO), developer, client
     avatar_url: Optional[str] = None
     is_verified: bool
+    is_active: bool = True
     class Config:
         from_attributes = True
 
 class DeveloperProfileBrief(BaseModel):
     id: int
-    title: Optional[str] = None
+    title: Optional[str] = "Full Stack Developer"
+    department: Optional[str] = "Engineering"
     location: Optional[str] = None
     availability: Optional[str] = "Available for Projects"
     years_experience: Optional[int] = 1
+    avatar_url: Optional[str] = None
     user: UserBrief
     skills: List[SkillOut] = []
     class Config:
@@ -90,7 +88,8 @@ class DeveloperProfileBrief(BaseModel):
 class DeveloperProfileOut(BaseModel):
     id: int
     user_id: int
-    title: Optional[str] = None
+    title: Optional[str] = "Full Stack Developer"
+    department: Optional[str] = "Engineering"
     short_bio: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
@@ -100,6 +99,9 @@ class DeveloperProfileOut(BaseModel):
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     resume_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    certificates: Optional[str] = None
+    achievements: Optional[str] = None
     is_public: bool = True
     views_count: int = 0
     user: UserBrief
@@ -109,6 +111,7 @@ class DeveloperProfileOut(BaseModel):
 
 class DeveloperProfileUpdate(BaseModel):
     title: Optional[str] = None
+    department: Optional[str] = None
     short_bio: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
@@ -118,11 +121,33 @@ class DeveloperProfileUpdate(BaseModel):
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     resume_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    certificates: Optional[str] = None
+    achievements: Optional[str] = None
     is_public: Optional[bool] = None
     skills: Optional[List[str]] = None
     avatar_url: Optional[str] = None
     full_name: Optional[str] = None
     phone: Optional[str] = None
+
+class DeveloperCreateByAdmin(BaseModel):
+    email: EmailStr
+    username: str
+    full_name: str
+    password: str = Field(..., min_length=6)
+    phone: Optional[str] = None
+    title: str = "Senior Full Stack Developer"
+    department: str = "Engineering"
+    short_bio: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
+    skills: List[str] = []
+    years_experience: int = 3
+    availability: str = "Available for Projects"
+    github_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    portfolio_url: Optional[str] = None
+    is_verified: bool = True
 
 class AdminUserUpdate(BaseModel):
     full_name: Optional[str] = None
@@ -132,7 +157,9 @@ class AdminUserUpdate(BaseModel):
     status: Optional[str] = None
     is_active: Optional[bool] = None
     is_verified: Optional[bool] = None
+    password: Optional[str] = None
     title: Optional[str] = None
+    department: Optional[str] = None
     short_bio: Optional[str] = None
     bio: Optional[str] = None
     location: Optional[str] = None
@@ -143,6 +170,9 @@ class AdminUserUpdate(BaseModel):
     linkedin_url: Optional[str] = None
     portfolio_url: Optional[str] = None
     resume_url: Optional[str] = None
+    cover_image_url: Optional[str] = None
+    certificates: Optional[str] = None
+    achievements: Optional[str] = None
     company_name: Optional[str] = None
     website: Optional[str] = None
     industry: Optional[str] = None
@@ -202,7 +232,9 @@ class ProjectOut(BaseModel):
     demo_url: Optional[str] = None
     repo_url: Optional[str] = None
     image_url: Optional[str] = None
-    status: Optional[str] = "Published"
+    gallery_urls: Optional[str] = None
+    status: Optional[str] = "Live" # Idea, Planning, In Development, Testing, Live, Completed, Maintenance, Archived
+    visibility: Optional[str] = "Public"
     client_name: Optional[str] = None
     start_date: Optional[str] = None
     completion_date: Optional[str] = None
@@ -216,10 +248,13 @@ class ProjectCreate(BaseModel):
     name: str
     short_description: Optional[str] = None
     description: Optional[str] = None
-    category: str = "Software"
+    category: str = "Websites"
     demo_url: Optional[str] = None
     repo_url: Optional[str] = None
     image_url: Optional[str] = None
+    gallery_urls: Optional[str] = None
+    status: str = "Live"
+    visibility: str = "Public"
     client_name: Optional[str] = None
     start_date: Optional[str] = None
     completion_date: Optional[str] = None
@@ -234,35 +269,52 @@ class ProjectUpdate(BaseModel):
     demo_url: Optional[str] = None
     repo_url: Optional[str] = None
     image_url: Optional[str] = None
+    gallery_urls: Optional[str] = None
     status: Optional[str] = None
+    visibility: Optional[str] = None
     client_name: Optional[str] = None
+    start_date: Optional[str] = None
+    completion_date: Optional[str] = None
     technologies: Optional[List[str]] = None
+    team_members: Optional[List[dict]] = None
 
 # --- Client Inquiry Schemas ---
 class ClientInquiryCreate(BaseModel):
-    developer_id: int
+    developer_id: Optional[int] = None
+    name: Optional[str] = None
+    company: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
     project_name: str
     project_type: Optional[str] = None
+    requirements: Optional[str] = None
     budget_range: Optional[str] = None
     timeline: Optional[str] = None
+    preferred_developer: Optional[str] = None
     description: str
 
 class ClientInquiryUpdate(BaseModel):
-    status: str # New, Contacted, In Discussion, Proposal, In Progress, Completed, Closed
+    status: str # New, Contacted, Discussion, Proposal, In Progress, Completed, Closed
 
 class ClientInquiryOut(BaseModel):
     id: int
-    client_id: int
-    developer_id: int
+    client_id: Optional[int] = None
+    developer_id: Optional[int] = None
+    name: Optional[str] = None
+    company: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
     project_name: str
     project_type: Optional[str] = None
+    requirements: Optional[str] = None
     budget_range: Optional[str] = None
     timeline: Optional[str] = None
+    preferred_developer: Optional[str] = None
     description: str
     status: str
     created_at: datetime
-    client: UserBrief
-    developer: DeveloperProfileBrief
+    client: Optional[UserBrief] = None
+    developer: Optional[DeveloperProfileBrief] = None
     class Config:
         from_attributes = True
 
@@ -326,16 +378,79 @@ class NotificationOut(BaseModel):
     class Config:
         from_attributes = True
 
+# --- Company & Website Settings Schemas ---
+class CompanySettingsBase(BaseModel):
+    company_name: str = "Company Name Not Configured"
+    logo_url: Optional[str] = None
+    favicon_url: Optional[str] = None
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    primary_color: str = "#000000"
+    secondary_color: str = "#ffffff"
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    whatsapp: Optional[str] = None
+    website: Optional[str] = None
+    instagram_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    youtube_url: Optional[str] = None
+    address: Optional[str] = None
+    business_hours: Optional[str] = None
+    footer_copyright: Optional[str] = None
+
+class CompanySettingsUpdate(BaseModel):
+    company_name: Optional[str] = None
+    logo_url: Optional[str] = None
+    favicon_url: Optional[str] = None
+    tagline: Optional[str] = None
+    description: Optional[str] = None
+    primary_color: Optional[str] = None
+    secondary_color: Optional[str] = None
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    whatsapp: Optional[str] = None
+    website: Optional[str] = None
+    instagram_url: Optional[str] = None
+    linkedin_url: Optional[str] = None
+    github_url: Optional[str] = None
+    youtube_url: Optional[str] = None
+    address: Optional[str] = None
+    business_hours: Optional[str] = None
+    footer_copyright: Optional[str] = None
+
+class CompanySettingsOut(CompanySettingsBase):
+    id: int
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+# --- Activity Log Schemas ---
+class ActivityLogOut(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    action: str
+    entity_type: Optional[str] = None
+    entity_id: Optional[int] = None
+    details: Optional[str] = None
+    ip_address: Optional[str] = None
+    created_at: datetime
+    user: Optional[UserBrief] = None
+    class Config:
+        from_attributes = True
+
 # --- Admin & Stats Schemas ---
 class DashboardStatsOut(BaseModel):
     total_developers: int
-    verified_developers: int
-    pending_applications: int
+    active_developers: int
     total_projects: int
+    completed_projects: int
     total_clients: int
-    total_inquiries: int
-    active_channels: int
+    open_inquiries: int
+    project_views: int
+    developer_views: int
+    recent_activity: List[ActivityLogOut] = []
 
 class DeveloperApprovalRequest(BaseModel):
-    action: str # approve, reject, suspend
+    action: str # approve, reject, suspend, restore
     reason: Optional[str] = None

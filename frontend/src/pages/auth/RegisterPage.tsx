@@ -3,13 +3,19 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { User, Building, ArrowRight, AlertCircle, CheckCircle2, X } from 'lucide-react';
 import api from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
 
 export const RegisterPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const initialType = searchParams.get('type') === 'client' ? 'client' : 'developer';
   const [accountType, setAccountType] = useState<'developer' | 'client'>(initialType);
   const { login } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
+
+  const platformName = settings?.company_name || 'RMVS Web Services';
+  const platformLogo = settings?.logo_url || '/logo.png';
+  const platformTagline = settings?.tagline || 'BUILD • CONNECT • GROW';
 
   // Shared fields
   const [fullName, setFullName] = useState('');
@@ -112,15 +118,15 @@ export const RegisterPage: React.FC = () => {
         {/* Brand */}
         <div className="text-center space-y-2 flex flex-col items-center">
           <Link to="/" className="inline-flex items-center gap-3 mb-1">
-            <img src="/logo.png" alt="Bro's Connect" className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-            <span className="font-instrument italic text-3xl text-slate-950">Bro's Connect</span>
+            <img src={platformLogo} alt={platformName} className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+            <span className="font-instrument italic text-3xl text-slate-950">{platformName}</span>
           </Link>
-          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-2">BUILD • CONNECT • GROW</p>
+          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-2">{platformTagline}</p>
           <h2 className="font-instrument italic text-2xl sm:text-3xl text-slate-950 leading-tight">
             Create Your Account
           </h2>
           <p className="text-slate-500 text-xs">
-            Register to access developer architectures, client inquiries, or executive administration.
+            Register to access developer projects, client inquiries, or executive administration.
           </p>
         </div>
 
@@ -171,7 +177,7 @@ export const RegisterPage: React.FC = () => {
               <div>
                 <p className="text-slate-800 text-xs font-medium mb-0.5">Developer Verification Process</p>
                 <p className="text-slate-500 text-xs leading-relaxed">
-                  Upon registration, your developer profile is created. Platform administrators review and verify your profile so you can publish architectures and connect with enterprise clients.
+                  Upon registration, your developer profile is created. Platform administrators review and verify your profile so you can publish projects and connect with enterprise clients.
                 </p>
               </div>
             </div>
@@ -267,7 +273,7 @@ export const RegisterPage: React.FC = () => {
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Principal Systems Architect"
+                      placeholder="e.g. Senior Full-Stack Developer"
                       className={inputClass}
                     />
                   </div>

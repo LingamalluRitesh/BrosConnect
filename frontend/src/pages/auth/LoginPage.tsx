@@ -1,17 +1,22 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Lock, Mail, ArrowRight, AlertCircle } from 'lucide-react';
-import api from '../../api/client';
+import { Mail, Lock, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { useSettings } from '../../context/SettingsContext';
+import api from '../../api/client';
 
 export const LoginPage: React.FC = () => {
-  const { login } = useAuth();
-  const navigate = useNavigate();
-
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { login } = useAuth();
+  const { settings } = useSettings();
+  const navigate = useNavigate();
+
+  const companyName = settings?.company_name || 'RMVS Web Services';
+  const logoUrl = settings?.logo_url || '/logo.png';
+  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,8 +25,8 @@ export const LoginPage: React.FC = () => {
     try {
       const res = await api.post('/auth/login', { email_or_username: identifier.trim(), password });
       login(res.data.access_token, res.data.user);
-      if (['super_admin', 'managing_director', 'admin'].includes(res.data.user.role)) {
-        navigate('/admin');
+      if (res.data.user.role === 'super_admin') {
+        navigate('/ceo');
       } else {
         navigate('/dashboard');
       }
@@ -39,12 +44,12 @@ export const LoginPage: React.FC = () => {
         {/* Brand */}
         <div className="text-center mb-8 flex flex-col items-center">
           <Link to="/" className="inline-flex items-center gap-3 mb-2">
-            <img src="/logo.png" alt="Bro's Connect" className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-            <span className="font-instrument italic text-slate-950 text-3xl">Bro's Connect</span>
+            <img src={logoUrl} alt={companyName} className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+            <span className="font-instrument italic text-slate-950 text-3xl">{companyName}</span>
           </Link>
-          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-3">BUILD • CONNECT • GROW</p>
-          <h2 className="font-instrument italic text-slate-800 text-xl">Sign in to your workspace</h2>
-          <p className="text-slate-500 text-xs mt-1">Access developer projects, community channels, and client inquiries.</p>
+          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-3">{tagline}</p>
+          <h2 className="font-instrument italic text-slate-800 text-xl">Sign in to your account</h2>
+          <p className="text-slate-500 text-xs mt-1">Access projects, community channels, and workspace controls.</p>
         </div>
 
         {/* Card */}
@@ -99,7 +104,7 @@ export const LoginPage: React.FC = () => {
             <p className="text-xs text-slate-500">
               Don't have an account?{' '}
               <Link to="/register" className="text-slate-900 hover:underline underline-offset-2 font-semibold transition-colors">
-                Register as Developer, Client, or Admin
+                Register as Developer or Client
               </Link>
             </p>
           </div>
