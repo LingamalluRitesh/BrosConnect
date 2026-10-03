@@ -41,7 +41,6 @@ export const Navbar: React.FC = () => {
 
   const companyName = settings?.company_name || 'RMVS Web Services';
   const logoUrl = settings?.logo_url || '/logo.png';
-  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
 
   const navLinks = [
     { label: 'Home', to: '/' },
@@ -60,20 +59,12 @@ export const Navbar: React.FC = () => {
         <nav className="liquid-glass rounded-full px-4 py-2 sm:py-2.5 flex items-center justify-between border border-black/[0.08] shadow-[0_8px_32px_rgba(15,23,42,0.06)] backdrop-blur-2xl bg-white/80">
           
           {/* Dynamic Brand with Logo */}
-          <Link to="/" className="flex items-center gap-2.5 group shrink-0 pl-1">
+          <Link to="/" className="flex items-center group shrink-0 pl-1 py-0.5">
             <img
               src={logoUrl}
               alt={companyName}
-              className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10 group-hover:ring-black/20 transition-all shadow-sm"
+              className="h-8 sm:h-9 w-auto max-w-[155px] sm:max-w-[195px] object-contain transition-transform group-hover:scale-[1.02]"
             />
-            <div className="flex flex-col text-left">
-              <span className="font-instrument italic text-slate-900 text-lg tracking-tight leading-tight group-hover:text-black transition-colors">
-                {companyName}
-              </span>
-              <span className="text-[7.5px] font-mono tracking-widest uppercase text-slate-400 hidden sm:block">
-                {tagline}
-              </span>
-            </div>
           </Link>
 
           {/* Desktop Navigation Links */}

@@ -8,7 +8,6 @@ export const Footer: React.FC = () => {
   const year = new Date().getFullYear();
 
   const companyName = settings?.company_name || 'RMVS Web Services';
-  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
   const logoUrl = settings?.logo_url || '/logo.png';
 
   return (
@@ -18,20 +17,12 @@ export const Footer: React.FC = () => {
           
           {/* Brand & Mission */}
           <div className="md:col-span-1 space-y-4">
-            <a href="https://rmvswebservices.onrender.com/" className="flex items-center gap-3 group">
+            <a href="https://rmvswebservices.onrender.com/" className="inline-block group mb-1">
               <img
                 src={logoUrl}
                 alt={companyName}
-                className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm group-hover:ring-black/20 transition-all"
+                className="h-10 sm:h-11 w-auto max-w-[210px] object-contain transition-transform group-hover:scale-[1.02]"
               />
-              <div>
-                <span className="font-instrument italic text-slate-900 text-2xl leading-tight block group-hover:text-black transition-colors">
-                  {companyName}
-                </span>
-                <p className="text-[8.5px] font-mono tracking-widest uppercase text-slate-400">
-                  {tagline}
-                </p>
-              </div>
             </a>
             <div className="text-[11px] text-slate-500">
               <span className="text-slate-400">Developer: </span>

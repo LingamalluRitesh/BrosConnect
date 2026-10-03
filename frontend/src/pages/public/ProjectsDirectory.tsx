@@ -41,7 +41,7 @@ export const ProjectsDirectory: React.FC = () => {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-10 flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-3 mb-4">
-            <img src={logoUrl} alt={companyName} className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+            <img src={logoUrl} alt={companyName} className="h-8 w-auto object-contain" />
             <p className="text-slate-500 text-xs tracking-widest uppercase font-mono">{companyName} Showcase</p>
           </div>
           <h1 className="font-instrument italic text-[clamp(2rem,5vw,4rem)] leading-[1.05] text-slate-900">

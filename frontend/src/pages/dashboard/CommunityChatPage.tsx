@@ -128,7 +128,7 @@ export const CommunityChatPage: React.FC = () => {
       <div className="max-w-6xl mx-auto">
         {/* Page header */}
         <div className="mb-5 flex items-center gap-3">
-          <img src={logoUrl} alt={companyName} className="w-8 h-8 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+          <img src={logoUrl} alt={companyName} className="h-8 w-auto object-contain" />
           <div>
             <h1 className="font-instrument italic text-2xl text-slate-950 leading-none">{companyName} Community</h1>
             <p className="text-xs text-slate-400 tracking-widest uppercase font-mono mt-0.5">Engineering &amp; Developer Channels</p>

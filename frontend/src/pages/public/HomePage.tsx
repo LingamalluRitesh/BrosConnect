@@ -38,8 +38,7 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number; className?: 
 export const HomePage: React.FC = () => {
   const { settings } = useSettings();
   const companyName = settings?.company_name || 'RMVS Web Services';
-  const logoUrl = settings?.logo_url || '/logo.png';
-  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
+  const tagline = settings?.tagline || 'DESIGN • DEVELOP • GROW TOGETHER';
 
   const [projects, setProjects] = useState<Project[]>([]);
   const [developers, setDevelopers] = useState<DeveloperProfile[]>([]);
@@ -102,7 +101,7 @@ export const HomePage: React.FC = () => {
             transition={{ duration: 0.8, delay: 0.1 }}
             className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full liquid-glass text-slate-700 text-xs font-mono tracking-widest uppercase mb-8 border border-black/[0.08] shadow-sm"
           >
-            <img src={logoUrl} alt={companyName} className="w-4 h-4 rounded-full object-cover" />
+            <img src="/logo-icon.png" alt={companyName} className="w-4 h-4 object-contain" />
             <span>Websites</span>
             <span className="text-slate-300">•</span>
             <span>Apps</span>

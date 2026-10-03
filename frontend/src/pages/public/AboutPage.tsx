@@ -16,7 +16,7 @@ export const AboutPage: React.FC = () => {
           <img
             src={settings?.logo_url || '/logo.png'}
             alt={companyName}
-            className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm"
+            className="h-8 w-auto object-contain"
           />
           <p className="text-slate-400 text-xs tracking-widest uppercase font-mono">
             About {companyName}

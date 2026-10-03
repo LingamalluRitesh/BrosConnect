@@ -16,7 +16,6 @@ export const LoginPage: React.FC = () => {
 
   const companyName = settings?.company_name || 'RMVS Web Services';
   const logoUrl = settings?.logo_url || '/logo.png';
-  const tagline = settings?.tagline || 'BUILD • CONNECT • GROW';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -43,11 +42,9 @@ export const LoginPage: React.FC = () => {
       <div className="w-full max-w-md space-y-6">
         {/* Brand */}
         <div className="text-center mb-8 flex flex-col items-center">
-          <Link to="/" className="inline-flex items-center gap-3 mb-2">
-            <img src={logoUrl} alt={companyName} className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-            <span className="font-instrument italic text-slate-950 text-3xl">{companyName}</span>
+          <Link to="/" className="inline-block mb-4">
+            <img src={logoUrl} alt={companyName} className="h-12 w-auto max-w-[240px] mx-auto object-contain transition-transform hover:scale-[1.02]" />
           </Link>
-          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-3">{tagline}</p>
           <h2 className="font-instrument italic text-slate-800 text-xl">Sign in to your account</h2>
           <p className="text-slate-500 text-xs mt-1">Access projects, community channels, and workspace controls.</p>
         </div>

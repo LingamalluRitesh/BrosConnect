@@ -339,7 +339,7 @@ export const AdminDashboard: React.FC = () => {
               <img
                 src={settings?.logo_url || '/logo.png'}
                 alt="Logo"
-                className="w-9 h-9 rounded-full object-cover ring-1 ring-black/10 shadow-sm"
+                className="h-8 w-auto object-contain"
               />
               <p className="text-slate-400 text-xs tracking-wider uppercase font-mono">
                 {settings?.company_name || 'Company'} · Executive Control Center

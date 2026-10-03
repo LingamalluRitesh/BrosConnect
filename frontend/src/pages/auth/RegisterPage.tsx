@@ -15,7 +15,6 @@ export const RegisterPage: React.FC = () => {
 
   const platformName = settings?.company_name || 'RMVS Web Services';
   const platformLogo = settings?.logo_url || '/logo.png';
-  const platformTagline = settings?.tagline || 'BUILD • CONNECT • GROW';
 
   // Shared fields
   const [fullName, setFullName] = useState('');
@@ -117,11 +116,9 @@ export const RegisterPage: React.FC = () => {
 
         {/* Brand */}
         <div className="text-center space-y-2 flex flex-col items-center">
-          <Link to="/" className="inline-flex items-center gap-3 mb-1">
-            <img src={platformLogo} alt={platformName} className="w-12 h-12 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
-            <span className="font-instrument italic text-3xl text-slate-950">{platformName}</span>
+          <Link to="/" className="inline-block mb-3">
+            <img src={platformLogo} alt={platformName} className="h-12 w-auto max-w-[240px] mx-auto object-contain transition-transform hover:scale-[1.02]" />
           </Link>
-          <p className="text-[10px] font-mono tracking-widest uppercase text-slate-400 mb-2">{platformTagline}</p>
           <h2 className="font-instrument italic text-2xl sm:text-3xl text-slate-950 leading-tight">
             Create Your Account
           </h2>

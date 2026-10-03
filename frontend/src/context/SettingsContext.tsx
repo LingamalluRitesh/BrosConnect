@@ -13,8 +13,8 @@ const defaultFallbackSettings: CompanySettings = {
   id: 1,
   company_name: 'RMVS Web Services',
   logo_url: '/logo.png',
-  favicon_url: '/logo.png',
-  tagline: 'BUILD • CONNECT • GROW',
+  favicon_url: '/favicon.png',
+  tagline: 'DESIGN • DEVELOP • GROW TOGETHER',
   description: 'Enterprise web architecture, digital platforms, and elite engineering solutions.',
   primary_color: '#0066FF',
   secondary_color: '#00F2FE',
@@ -41,7 +41,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const applyBrandingToDocument = (data: CompanySettings) => {
     if (data.company_name) {
-      document.title = `${data.company_name} | ${data.tagline || 'Web Services & Architecture'}`;
+      document.title = `${data.company_name} | ${data.tagline || 'DESIGN • DEVELOP • GROW TOGETHER'}`;
     }
     if (data.favicon_url || data.logo_url) {
       let link: HTMLLinkElement | null = document.querySelector("link[rel*='icon']");
@@ -50,7 +50,7 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         link.rel = 'icon';
         document.getElementsByTagName('head')[0].appendChild(link);
       }
-      link.href = data.favicon_url || data.logo_url || '/logo.png';
+      link.href = data.favicon_url || '/favicon.png';
     }
   };
 

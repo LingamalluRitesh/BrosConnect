@@ -45,7 +45,7 @@ export const ContactPage: React.FC = () => {
       {/* Hero */}
       <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-14 pb-12">
         <div className="flex items-center gap-3 mb-6">
-          <img src={logoUrl} alt={companyName} className="w-10 h-10 rounded-full object-cover ring-1 ring-black/10 shadow-sm" />
+          <img src={logoUrl} alt={companyName} className="h-8 w-auto object-contain" />
           <p className="text-slate-400 text-xs tracking-widest uppercase font-mono">Get in touch with {companyName}</p>
         </div>
         <h1 className="font-instrument italic text-[clamp(2.5rem,5vw,4.5rem)] leading-[1.05] text-slate-950 mb-6 max-w-2xl">

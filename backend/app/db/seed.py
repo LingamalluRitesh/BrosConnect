@@ -55,8 +55,8 @@ async def seed_data():
                 id=1,
                 company_name="RMVS Web Services",
                 logo_url="/logo.png",
-                favicon_url="/logo.png",
-                tagline="BUILD • CONNECT • GROW",
+                favicon_url="/favicon.png",
+                tagline="DESIGN • DEVELOP • GROW TOGETHER",
                 description="Enterprise web architecture, digital platforms, and elite engineering solutions.",
                 primary_color="#0066FF",
                 secondary_color="#00F2FE",
@@ -71,7 +71,8 @@ async def seed_data():
         else:
             existing_settings.company_name = "RMVS Web Services"
             existing_settings.logo_url = "/logo.png"
-            existing_settings.favicon_url = "/logo.png"
+            existing_settings.favicon_url = "/favicon.png"
+            existing_settings.tagline = "DESIGN • DEVELOP • GROW TOGETHER"
             existing_settings.footer_copyright = "© 2026 RMVS Web Services. All rights reserved."
             existing_settings.email = "contact@rmvswebservices.com"
             existing_settings.website = "https://rmvswebservices.com"
